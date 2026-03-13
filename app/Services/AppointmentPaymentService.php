@@ -1,0 +1,363 @@
+<?php
+
+namespace App\Services;
+
+use App\Mail\PaymentGracePeriodAdminEmail;
+use App\Mail\PaymentGracePeriodPatientEmail;
+use App\Models\Appointment;
+use App\Models\AppointmentPayment;
+use App\Models\AppointmentType;
+use App\Models\Patient;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
+
+class AppointmentPaymentService
+{
+    public function __construct(
+        private readonly StripeGateway $stripeGateway,
+    ) {
+    }
+
+    /** @return array{strategy:string,status:string,client_secret:?string} */
+    public function initializePayment(Appointment $appointment, AppointmentType $appointmentType, Patient $patient): array
+    {
+        if (! config('services.stripe.secret')) {
+            AppointmentPayment::query()->create([
+                'appointment_id' => $appointment->id,
+                'patient_id' => $patient->id,
+                'appointment_type_id' => $appointmentType->id,
+                'strategy' => 'skip',
+                'status' => 'skipped_unconfigured',
+                'amount_cents' => (int) ($appointmentType->deposit_amount_cents ?? 0),
+                'currency' => $appointmentType->deposit_currency ?: 'usd',
+            ]);
+
+            return [
+                'strategy' => 'skip',
+                'status' => 'skipped_unconfigured',
+                'client_secret' => null,
+            ];
+        }
+
+        $amount = (int) ($appointmentType->deposit_amount_cents ?? 0);
+        $currency = $appointmentType->deposit_currency ?: 'usd';
+
+        if ($appointmentType->is_medical || $amount <= 0) {
+            AppointmentPayment::query()->create([
+                'appointment_id' => $appointment->id,
+                'patient_id' => $patient->id,
+                'appointment_type_id' => $appointmentType->id,
+                'strategy' => 'skip',
+                'status' => 'skipped',
+                'amount_cents' => $amount,
+                'currency' => $currency,
+            ]);
+
+            return [
+                'strategy' => 'skip',
+                'status' => 'skipped',
+                'client_secret' => null,
+            ];
+        }
+
+        $daysAway = now()->diffInDays(CarbonImmutable::parse($appointment->slot_datetime), false);
+
+        if ($daysAway <= 7) {
+            $intent = $this->stripeGateway->createPaymentIntent([
+                'amount' => $amount,
+                'currency' => $currency,
+                'capture_method' => 'manual',
+                'automatic_payment_methods' => ['enabled' => true],
+                'metadata' => [
+                    'appointment_id' => $appointment->id,
+                    'patient_id' => $patient->id,
+                ],
+            ]);
+
+            AppointmentPayment::query()->create([
+                'appointment_id' => $appointment->id,
+                'patient_id' => $patient->id,
+                'appointment_type_id' => $appointmentType->id,
+                'strategy' => 'payment_intent',
+                'status' => $intent['status'] ?? 'requires_payment_method',
+                'amount_cents' => $amount,
+                'currency' => $currency,
+                'stripe_payment_intent_id' => $intent['id'] ?? null,
+                'auth_scheduled_for' => null,
+            ]);
+
+            return [
+                'strategy' => 'payment_intent',
+                'status' => $intent['status'] ?? 'requires_payment_method',
+                'client_secret' => $intent['client_secret'] ?? null,
+            ];
+        }
+
+        $setupIntent = $this->stripeGateway->createSetupIntent([
+            'usage' => 'off_session',
+            'metadata' => [
+                'appointment_id' => $appointment->id,
+                'patient_id' => $patient->id,
+            ],
+        ]);
+
+        $scheduledFor = CarbonImmutable::parse($appointment->slot_datetime)->subDays(7);
+
+        AppointmentPayment::query()->create([
+            'appointment_id' => $appointment->id,
+            'patient_id' => $patient->id,
+            'appointment_type_id' => $appointmentType->id,
+            'strategy' => 'setup_intent',
+            'status' => $setupIntent['status'] ?? 'requires_payment_method',
+            'amount_cents' => $amount,
+            'currency' => $currency,
+            'stripe_setup_intent_id' => $setupIntent['id'] ?? null,
+            'auth_scheduled_for' => $scheduledFor,
+        ]);
+
+        return [
+            'strategy' => 'setup_intent',
+            'status' => $setupIntent['status'] ?? 'requires_payment_method',
+            'client_secret' => $setupIntent['client_secret'] ?? null,
+        ];
+    }
+
+    public function recordSetupIntentSucceeded(string $setupIntentId, ?string $paymentMethodId): void
+    {
+        if (! $paymentMethodId) {
+            return;
+        }
+
+        $payment = AppointmentPayment::query()
+            ->where('stripe_setup_intent_id', $setupIntentId)
+            ->first();
+
+        if (! $payment) {
+            return;
+        }
+
+        $payment->update([
+            'stripe_payment_method_id' => $paymentMethodId,
+            'status' => 'pending_setup',
+        ]);
+    }
+
+    public function recordPaymentIntentStatus(string $paymentIntentId, ?string $status): void
+    {
+        if (! $paymentIntentId || ! $status) {
+            return;
+        }
+
+        $payment = AppointmentPayment::query()
+            ->where('stripe_payment_intent_id', $paymentIntentId)
+            ->first();
+
+        if (! $payment) {
+            return;
+        }
+
+        $updates = ['status' => $status];
+
+        if ($status === 'requires_capture' && ! $payment->authorized_at) {
+            $updates['authorized_at'] = now();
+        }
+
+        if ($status === 'succeeded' && ! $payment->captured_at) {
+            $updates['captured_at'] = now();
+        }
+
+        if ($status === 'failed' && ! $payment->failed_at) {
+            $updates['failed_at'] = now();
+        }
+
+        if ($status === 'canceled' && ! $payment->failed_at) {
+            $updates['failed_at'] = now();
+        }
+
+        $payment->update($updates);
+
+        if (in_array($status, ['failed', 'canceled'], true)) {
+            $this->startGracePeriod($payment);
+        }
+
+        if (in_array($status, ['requires_capture', 'succeeded'], true)) {
+            $payment->update([
+                'grace_started_at' => null,
+                'grace_expires_at' => null,
+            ]);
+        }
+    }
+
+    public function recordChargeRefunded(string $paymentIntentId, ?string $chargeId): void
+    {
+        if (! $paymentIntentId) {
+            return;
+        }
+
+        $payment = AppointmentPayment::query()
+            ->where('stripe_payment_intent_id', $paymentIntentId)
+            ->first();
+
+        if (! $payment) {
+            return;
+        }
+
+        $payment->update([
+            'status' => 'refunded',
+            'failed_at' => $payment->failed_at ?? now(),
+        ]);
+    }
+
+    public function recordChargeDispute(string $paymentIntentId, ?string $chargeId): void
+    {
+        if (! $paymentIntentId) {
+            return;
+        }
+
+        $payment = AppointmentPayment::query()
+            ->where('stripe_payment_intent_id', $paymentIntentId)
+            ->first();
+
+        if (! $payment) {
+            return;
+        }
+
+        $payment->update([
+            'status' => 'disputed',
+            'failed_at' => $payment->failed_at ?? now(),
+        ]);
+    }
+
+    public function cancelExpiredGrace(): int
+    {
+        $expired = AppointmentPayment::query()
+            ->whereIn('status', ['failed', 'canceled'])
+            ->whereNotNull('grace_expires_at')
+            ->where('grace_expires_at', '<=', now())
+            ->get();
+
+        $count = 0;
+
+        foreach ($expired as $payment) {
+            $appointment = $payment->appointment;
+
+            if ($appointment && $appointment->status !== 'cancelled_by_clinic') {
+                $appointment->update(['status' => 'cancelled_by_clinic']);
+            }
+
+            $payment->update(['status' => 'grace_expired']);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    public function authorizeScheduledHolds(): int
+    {
+        $eligible = AppointmentPayment::query()
+            ->where('strategy', 'setup_intent')
+            ->where('status', 'pending_setup')
+            ->whereNotNull('stripe_payment_method_id')
+            ->whereNull('stripe_payment_intent_id')
+            ->whereNotNull('auth_scheduled_for')
+            ->where('auth_scheduled_for', '<=', now())
+            ->get();
+
+        $count = 0;
+
+        foreach ($eligible as $payment) {
+            try {
+                $intent = $this->stripeGateway->createPaymentIntent([
+                    'amount' => $payment->amount_cents,
+                    'currency' => $payment->currency,
+                    'capture_method' => 'manual',
+                    'payment_method' => $payment->stripe_payment_method_id,
+                    'confirm' => true,
+                    'off_session' => true,
+                    'metadata' => [
+                        'appointment_id' => $payment->appointment_id,
+                        'patient_id' => $payment->patient_id,
+                        'origin' => 't7_scheduler',
+                    ],
+                ]);
+
+                $status = $intent['status'] ?? 'requires_capture';
+
+                $payment->update([
+                    'stripe_payment_intent_id' => $intent['id'] ?? null,
+                    'status' => $status,
+                    'authorized_at' => in_array($status, ['requires_capture', 'succeeded'], true) ? now() : null,
+                ]);
+
+                if (! in_array($status, ['requires_capture', 'succeeded'], true)) {
+                    $this->startGracePeriod($payment);
+                }
+            } catch (Throwable) {
+                $this->startGracePeriod($payment);
+            }
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function startGracePeriod(AppointmentPayment $payment): void
+    {
+        if ($payment->strategy !== 'setup_intent') {
+            return;
+        }
+
+        if ($payment->grace_started_at) {
+            return;
+        }
+
+        $payment->update([
+            'status' => $payment->status === 'canceled' ? 'canceled' : 'failed',
+            'failed_at' => $payment->failed_at ?? now(),
+            'grace_started_at' => now(),
+            'grace_expires_at' => now()->addHours(48),
+        ]);
+
+        $this->notifyGraceStarted($payment);
+    }
+
+    private function notifyGraceStarted(AppointmentPayment $payment): void
+    {
+        $appointment = $payment->appointment()
+            ->with(['clinic:id,name,timezone', 'provider:id,full_name'])
+            ->first();
+        $patient = $payment->patient;
+
+        if (! $appointment || ! $patient || ! $patient->email) {
+            return;
+        }
+
+        $timezone = $appointment->clinic?->timezone ?? 'UTC';
+        $slotLocal = CarbonImmutable::parse($appointment->slot_datetime)
+            ->setTimezone($timezone)
+            ->format('Y-m-d H:i:s');
+
+        $details = [
+            'clinic' => $appointment->clinic?->name ?? 'Clinic',
+            'slot_local' => $slotLocal,
+            'timezone' => $timezone,
+            'grace_expires_at' => $payment->grace_expires_at?->format('Y-m-d H:i:s') ?? now()->addHours(48)->format('Y-m-d H:i:s'),
+        ];
+
+        Mail::to($patient->email)->send(new PaymentGracePeriodPatientEmail($details));
+
+        $adminEmail = config('services.payment_alerts.admin_email');
+        if ($adminEmail) {
+            Mail::to($adminEmail)->send(new PaymentGracePeriodAdminEmail([
+                'clinic' => $details['clinic'],
+                'patient' => $patient->full_name ?? 'Patient',
+                'email' => $patient->email,
+                'slot_local' => $details['slot_local'],
+                'timezone' => $details['timezone'],
+                'grace_expires_at' => $details['grace_expires_at'],
+            ]));
+        }
+    }
+}
