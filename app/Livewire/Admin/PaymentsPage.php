@@ -3,26 +3,35 @@
 namespace App\Livewire\Admin;
 
 use App\Models\AppointmentPayment;
+use App\Models\Appointment;
 use App\Models\Clinic;
+use App\Services\AppointmentPaymentService;
 use Carbon\CarbonImmutable;
 use Livewire\Component;
+use Livewire\WithPagination;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PaymentsPage extends Component
 {
+    use WithPagination;
     /** @var array<int, array{id:int,name:string}> */
     public array $clinics = [];
 
-    /** @var array<int, array<string,mixed>> */
-    public array $payments = [];
+    /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string,mixed>> */
+    public $payments = [];
 
     public string $clinicFilter = 'all';
     public string $statusFilter = 'all';
+    public string $search = '';
+    public int $perPage = 20;
 
     public int $failedCount = 0;
     public int $canceledCount = 0;
     public int $disputedCount = 0;
     public int $refundedCount = 0;
+    public ?string $actionError = null;
+    public ?string $actionMessage = null;
 
     public function mount(): void
     {
@@ -44,13 +53,59 @@ class PaymentsPage extends Component
         $this->loadPayments();
     }
 
+    public function cancelAppointment(int $appointmentId): void
+    {
+        $this->ensureAdmin();
+        $this->actionError = null;
+        $this->actionMessage = null;
+
+        $appointment = Appointment::query()->findOrFail($appointmentId);
+        $paymentService = app(AppointmentPaymentService::class);
+
+        try {
+            $result = $paymentService->cancelByClinic($appointment);
+            $this->actionMessage = "Appointment cancelled ({$result['payment_action']}).";
+        } catch (RuntimeException $exception) {
+            $this->actionError = $exception->getMessage();
+        }
+
+        $this->loadPayments();
+    }
+
+    public function markNoShow(int $appointmentId, bool $chargeDeposit = true): void
+    {
+        $this->ensureAdmin();
+        $this->actionError = null;
+        $this->actionMessage = null;
+
+        $appointment = Appointment::query()->findOrFail($appointmentId);
+        $paymentService = app(AppointmentPaymentService::class);
+
+        try {
+            $result = $paymentService->markNoShow($appointment, $chargeDeposit);
+            $this->actionMessage = "Appointment marked no-show ({$result['payment_action']}).";
+        } catch (RuntimeException $exception) {
+            $this->actionError = $exception->getMessage();
+        }
+
+        $this->loadPayments();
+    }
+
     public function updatedClinicFilter(): void
     {
+        $this->resetPage();
         $this->loadPayments();
     }
 
     public function updatedStatusFilter(): void
     {
+        $this->resetPage();
+        $this->loadPayments();
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
         $this->loadPayments();
     }
 
@@ -126,9 +181,8 @@ class PaymentsPage extends Component
         $this->refundedCount = (clone $baseCounts)->where('status', 'refunded')->count();
 
         $this->payments = $query
-            ->limit(200)
-            ->get()
-            ->map(function (AppointmentPayment $payment) use ($now): array {
+            ->paginate($this->perPage)
+            ->through(function (AppointmentPayment $payment) use ($now): array {
                 $appointment = $payment->appointment;
                 $timezone = $appointment?->clinic?->timezone ?? 'UTC';
                 $slotLocal = $appointment?->slot_datetime
@@ -140,6 +194,8 @@ class PaymentsPage extends Component
 
                 return [
                     'id' => $payment->id,
+                    'appointment_id' => $appointment?->id,
+                    'appointment_status' => $appointment?->status ?? 'unknown',
                     'status' => $payment->status,
                     'strategy' => $payment->strategy,
                     'amount' => $payment->amount_cents,
@@ -155,14 +211,14 @@ class PaymentsPage extends Component
                     'patient' => $payment->patient?->full_name ?? 'Patient',
                     'email' => $payment->patient?->email ?? null,
                 ];
-            })->all();
+            });
     }
 
     private function filteredQuery()
     {
         $query = AppointmentPayment::query()
             ->with([
-                'appointment:id,clinic_id,provider_id,appointment_type_id,slot_datetime',
+                'appointment:id,clinic_id,provider_id,appointment_type_id,slot_datetime,status',
                 'appointment.clinic:id,name,timezone',
                 'appointment.provider:id,full_name',
                 'appointment.appointmentType:id,name',
@@ -193,6 +249,20 @@ class PaymentsPage extends Component
             } else {
                 $query->where('status', $this->statusFilter);
             }
+        }
+
+        if ($this->search) {
+            $search = '%'.strtolower($this->search).'%';
+            $query->where(function ($sub) use ($search): void {
+                $sub->whereHas('patient', function ($patientSub) use ($search): void {
+                    $patientSub->whereRaw('LOWER(full_name) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$search]);
+                })->orWhereHas('appointment.provider', function ($providerSub) use ($search): void {
+                    $providerSub->whereRaw('LOWER(full_name) LIKE ?', [$search]);
+                })->orWhereHas('appointment.appointmentType', function ($typeSub) use ($search): void {
+                    $typeSub->whereRaw('LOWER(name) LIKE ?', [$search]);
+                });
+            });
         }
 
         return $query;

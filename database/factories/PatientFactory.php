@@ -28,6 +28,7 @@ class PatientFactory extends Factory
                 'consentedAt' => now()->toIso8601String(),
                 'consentIP' => '127.0.0.1',
             ],
+            'no_show_count' => 0,
         ];
     }
 }

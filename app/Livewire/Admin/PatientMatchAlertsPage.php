@@ -4,19 +4,26 @@ namespace App\Livewire\Admin;
 
 use App\Models\Clinic;
 use App\Models\PatientMatchAlert;
+use App\Models\Patient;
+use App\Services\PatientMergeService;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class PatientMatchAlertsPage extends Component
 {
+    use WithPagination;
     /** @var array<int, array{id:int,name:string}> */
     public array $clinics = [];
 
-    /** @var array<int, array<string,mixed>> */
-    public array $alerts = [];
+    /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string,mixed>> */
+    public $alerts = [];
 
     public string $clinicFilter = 'all';
+    public string $search = '';
+    public int $perPage = 20;
     public int $openAlertsCount = 0;
     public int $resolvedAlertsCount = 0;
+    public ?int $mergeTargetId = null;
 
     public function mount(): void
     {
@@ -40,6 +47,13 @@ class PatientMatchAlertsPage extends Component
 
     public function updatedClinicFilter(): void
     {
+        $this->resetPage();
+        $this->loadAlerts();
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
         $this->loadAlerts();
     }
 
@@ -60,6 +74,27 @@ class PatientMatchAlertsPage extends Component
         $this->loadAlerts();
     }
 
+    public function mergePatient(int $alertId, int $sourcePatientId, int $targetPatientId): void
+    {
+        $this->ensureAdmin();
+
+        if ($sourcePatientId === $targetPatientId) {
+            session()->flash('match_alerts_status', 'Select a different patient to merge into.');
+            return;
+        }
+
+        $alert = PatientMatchAlert::query()->findOrFail($alertId);
+        $source = Patient::query()->findOrFail($sourcePatientId);
+        $target = Patient::query()->findOrFail($targetPatientId);
+
+        app(PatientMergeService::class)->mergePatients($source, $target, auth()->id() ?? 0);
+
+        $alert->update(['resolved_at' => now()]);
+
+        session()->flash('match_alerts_status', 'Patients merged successfully.');
+        $this->loadAlerts();
+    }
+
     private function loadAlerts(): void
     {
         $query = PatientMatchAlert::query()
@@ -70,13 +105,24 @@ class PatientMatchAlertsPage extends Component
             $query->where('clinic_id', (int) $this->clinicFilter);
         }
 
+        if ($this->search) {
+            $search = '%'.strtolower($this->search).'%';
+            $query->where(function ($sub) use ($search): void {
+                $sub->whereRaw('LOWER(alert_type) LIKE ?', [$search])
+                    ->orWhereHas('patient', function ($patientSub) use ($search): void {
+                        $patientSub->whereRaw('LOWER(full_name) LIKE ?', [$search])
+                            ->orWhereRaw('LOWER(email) LIKE ?', [$search]);
+                    })
+                    ->orWhereRaw('LOWER(payload->>\"email\") LIKE ?', [$search]);
+            });
+        }
+
         $this->openAlertsCount = (clone $query)->whereNull('resolved_at')->count();
         $this->resolvedAlertsCount = (clone $query)->whereNotNull('resolved_at')->count();
 
         $this->alerts = $query
-            ->limit(200)
-            ->get()
-            ->map(function (PatientMatchAlert $alert): array {
+            ->paginate($this->perPage)
+            ->through(function (PatientMatchAlert $alert): array {
                 $existingIds = $alert->payload['existingPatientIds'] ?? [];
 
                 return [
@@ -88,9 +134,17 @@ class PatientMatchAlertsPage extends Component
                     'email' => $alert->payload['email'] ?? $alert->patient?->email,
                     'alert_type' => $alert->alert_type,
                     'existing_patient_ids' => $existingIds,
+                    'existing_patients' => Patient::query()
+                        ->whereIn('id', $existingIds)
+                        ->get(['id', 'full_name', 'date_of_birth'])
+                        ->map(fn (Patient $patient): array => [
+                            'id' => $patient->id,
+                            'name' => $patient->full_name,
+                            'dob' => $patient->date_of_birth?->format('Y-m-d'),
+                        ])->all(),
                     'resolved_at' => $alert->resolved_at?->format('Y-m-d H:i:s'),
                 ];
-            })->all();
+            });
     }
 
     public function render()

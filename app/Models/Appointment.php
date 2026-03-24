@@ -50,4 +50,9 @@ class Appointment extends Model
     {
         return $this->hasOne(AppointmentPayment::class);
     }
+
+    public function insuranceVerification(): HasOne
+    {
+        return $this->hasOne(InsuranceVerification::class);
+    }
 }

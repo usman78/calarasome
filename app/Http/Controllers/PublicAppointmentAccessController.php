@@ -45,11 +45,13 @@ class PublicAppointmentAccessController extends Controller
                     ->format('Y-m-d H:i:s');
 
                 $details = [
+                    'appointment_id' => $appointment->id,
                     'clinic' => $appointment->clinic?->name ?? 'Clinic',
                     'provider' => $appointment->provider?->full_name ?? 'Provider',
                     'appointment_type' => $appointment->appointmentType?->name ?? 'Appointment',
                     'slot_local' => $slotLocal,
                     'timezone' => $appointment->clinic?->timezone ?? 'UTC',
+                    'status' => $appointment->status ?? 'pending',
                 ];
             }
         }
@@ -58,6 +60,8 @@ class PublicAppointmentAccessController extends Controller
             'tokenStatus' => 'valid',
             'verified' => $verified,
             'details' => $details,
+            'appointment' => $appointment ?? null,
+            'cancelToken' => $token,
         ]);
     }
 

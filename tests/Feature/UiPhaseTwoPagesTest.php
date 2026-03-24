@@ -104,6 +104,54 @@ it('allows admin to access payments page', function () {
         ->assertSee('Payments Monitor');
 });
 
+it('requires admin for waitlist page', function () {
+    $this->get(route('admin.waitlist'))->assertRedirect(route('login'));
+
+    $user = User::factory()->create(['is_admin' => false]);
+    $this->actingAs($user)->get(route('admin.waitlist'))->assertForbidden();
+});
+
+it('allows admin to access waitlist page', function () {
+    $user = User::factory()->create(['is_admin' => true]);
+
+    $this->actingAs($user)
+        ->get(route('admin.waitlist'))
+        ->assertOk()
+        ->assertSee('Waitlist Priority');
+});
+
+it('requires admin for insurance verification queue', function () {
+    $this->get(route('admin.insurance-verifications'))->assertRedirect(route('login'));
+
+    $user = User::factory()->create(['is_admin' => false]);
+    $this->actingAs($user)->get(route('admin.insurance-verifications'))->assertForbidden();
+});
+
+it('allows admin to access insurance verification queue', function () {
+    $user = User::factory()->create(['is_admin' => true]);
+
+    $this->actingAs($user)
+        ->get(route('admin.insurance-verifications'))
+        ->assertOk()
+        ->assertSee('Insurance Verification Queue');
+});
+
+it('requires admin for patient merge audit page', function () {
+    $this->get(route('admin.patient-merge-audit'))->assertRedirect(route('login'));
+
+    $user = User::factory()->create(['is_admin' => false]);
+    $this->actingAs($user)->get(route('admin.patient-merge-audit'))->assertForbidden();
+});
+
+it('allows admin to access patient merge audit page', function () {
+    $user = User::factory()->create(['is_admin' => true]);
+
+    $this->actingAs($user)
+        ->get(route('admin.patient-merge-audit'))
+        ->assertOk()
+        ->assertSee('Patient Merge Audit Log');
+});
+
 it('allows admin to mark a patient match alert as resolved', function () {
     $clinic = Clinic::factory()->create();
     $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);

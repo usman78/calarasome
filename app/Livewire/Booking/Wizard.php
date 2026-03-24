@@ -10,9 +10,11 @@ use App\Models\SlotReservation;
 use App\Services\AppointmentCommunicationService;
 use App\Services\AppointmentPaymentService;
 use App\Services\ClinicDateTimeService;
+use App\Services\InsuranceVerificationService;
 use App\Services\PatientMatchingService;
 use App\Services\ProviderAssignmentService;
 use App\Services\SlotAvailabilityService;
+use App\Services\WaitlistEntryService;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -21,7 +23,7 @@ class Wizard extends Component
 {
     public Clinic $clinic;
 
-    /** @var array<int, array{id:int,name:string,duration_minutes:int}> */
+    /** @var array<int, array{id:int,name:string,duration_minutes:int,is_medical:bool}> */
     public array $appointmentTypes = [];
 
     /** @var array<int, array{id:int,full_name:string,title:?string}> */
@@ -50,6 +52,22 @@ class Wizard extends Component
     public string $dateOfBirth = '';
     public bool $emailConsent = true;
     public bool $emailPhi = false;
+    public bool $requiresInsurance = false;
+    public string $insuranceProvider = '';
+    public string $insuranceMemberId = '';
+    public string $insuranceGroupId = '';
+    public string $insurancePlan = '';
+    public string $insuranceSubscriberName = '';
+    public string $insuranceSubscriberDob = '';
+    public string $insuranceRelationship = 'self';
+    public string $insurancePhone = '';
+    public string $insuranceUrgency = 'standard';
+    public bool $isWaitlistMode = false;
+    public ?string $preferredDate = null;
+    public ?string $preferredTime = null;
+    public ?int $waitlistEntryId = null;
+    public ?string $waitlistTier = null;
+    public ?int $waitlistScore = null;
 
     public ?int $appointmentId = null;
     public ?string $confirmedSlotLocal = null;
@@ -65,11 +83,12 @@ class Wizard extends Component
             ->where('clinic_id', $clinic->id)
             ->where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'duration_minutes'])
+            ->get(['id', 'name', 'duration_minutes', 'is_medical'])
             ->map(fn (AppointmentType $type): array => [
                 'id' => $type->id,
                 'name' => $type->name,
                 'duration_minutes' => $type->duration_minutes,
+                'is_medical' => (bool) $type->is_medical,
             ])->all();
     }
 
@@ -79,6 +98,11 @@ class Wizard extends Component
         $this->providerSelection = null;
         $this->slotLocalDatetime = null;
         $this->sessionToken = null;
+        $this->isWaitlistMode = false;
+        $this->requiresInsurance = (bool) (collect($this->appointmentTypes)->firstWhere('id', $appointmentTypeId)['is_medical'] ?? false);
+        if (! $this->requiresInsurance) {
+            $this->resetInsuranceFields();
+        }
         $this->loadProviders();
         $this->step = 3;
     }
@@ -95,6 +119,7 @@ class Wizard extends Component
         $this->providerSelection = $providerSelection;
         $this->slotLocalDatetime = null;
         $this->sessionToken = null;
+        $this->isWaitlistMode = false;
         $this->loadSlots();
         $this->step = 4;
     }
@@ -147,7 +172,7 @@ class Wizard extends Component
 
     public function refreshReservationTimer(): void
     {
-        if (! $this->sessionToken || ! $this->reservationExpiresAt || $this->step !== 5) {
+        if ($this->isWaitlistMode || ! $this->sessionToken || ! $this->reservationExpiresAt || $this->step !== 5) {
             return;
         }
 
@@ -168,14 +193,31 @@ class Wizard extends Component
 
     public function completeBooking(): void
     {
-        $this->validate([
+        $this->isWaitlistMode = false;
+        $rules = [
             'fullName' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
             'dateOfBirth' => ['required', 'date'],
             'emailConsent' => ['accepted'],
             'emailPhi' => ['boolean'],
-        ]);
+        ];
+
+        if ($this->requiresInsurance) {
+            $rules = array_merge($rules, [
+                'insuranceProvider' => ['required', 'string', 'max:255'],
+                'insuranceMemberId' => ['required', 'string', 'max:255'],
+                'insuranceGroupId' => ['nullable', 'string', 'max:255'],
+                'insurancePlan' => ['nullable', 'string', 'max:255'],
+                'insuranceSubscriberName' => ['required', 'string', 'max:255'],
+                'insuranceSubscriberDob' => ['required', 'date'],
+                'insuranceRelationship' => ['required', 'in:self,spouse,child,other'],
+                'insurancePhone' => ['nullable', 'string', 'max:255'],
+                'insuranceUrgency' => ['required', 'in:standard,high,critical'],
+            ]);
+        }
+
+        $this->validate($rules);
 
         if (! $this->sessionToken) {
             throw ValidationException::withMessages(['reservation' => 'Slot reservation is required before booking.']);
@@ -217,6 +259,20 @@ class Wizard extends Component
             'status' => 'confirmed',
         ]);
 
+        if ($appointmentType->is_medical && $this->requiresInsurance) {
+            app(InsuranceVerificationService::class)->createForAppointment($appointment, $patient, [
+                'provider' => $this->insuranceProvider,
+                'member_id' => $this->insuranceMemberId,
+                'group_id' => $this->insuranceGroupId ?: null,
+                'plan' => $this->insurancePlan ?: null,
+                'subscriber_name' => $this->insuranceSubscriberName,
+                'subscriber_dob' => $this->insuranceSubscriberDob,
+                'relationship' => $this->insuranceRelationship,
+                'phone' => $this->insurancePhone ?: null,
+                'urgency' => $this->insuranceUrgency,
+            ]);
+        }
+
         $reservation->update([
             'converted_to_appointment_id' => $appointment->id,
             'released_at' => now(),
@@ -241,6 +297,62 @@ class Wizard extends Component
 
         $this->appointmentId = $appointment->id;
         $this->confirmedSlotLocal = CarbonImmutable::parse($appointment->slot_datetime)->setTimezone($this->clinic->timezone)->format('Y-m-d H:i:s');
+        $this->step = 6;
+    }
+
+    public function enterWaitlistMode(): void
+    {
+        $this->isWaitlistMode = true;
+        $this->sessionToken = null;
+        $this->reservationExpiresAt = null;
+        $this->reservationSecondsRemaining = 0;
+        $this->slotLocalDatetime = null;
+        $this->assignedProviderId = null;
+        $this->assignedProviderName = null;
+        $this->preferredDate = $this->selectedDate ?: now($this->clinic->timezone)->format('Y-m-d');
+        $this->preferredTime = null;
+        $this->step = 5;
+    }
+
+    public function submitWaitlist(): void
+    {
+        $this->validate([
+            'fullName' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'dateOfBirth' => ['required', 'date'],
+            'emailConsent' => ['accepted'],
+            'preferredDate' => ['nullable', 'date'],
+            'preferredTime' => ['nullable', 'date_format:H:i'],
+        ]);
+
+        if (! $this->appointmentTypeId) {
+            throw ValidationException::withMessages(['reservation' => 'Please select an appointment type first.']);
+        }
+
+        $providerId = null;
+        if ($this->providerSelection && $this->providerSelection !== 'any') {
+            $providerId = (int) $this->providerSelection;
+        }
+
+        $entry = app(WaitlistEntryService::class)->createEntry($this->clinic, [
+            'appointment_type_id' => $this->appointmentTypeId,
+            'provider_id' => $providerId,
+            'full_name' => $this->fullName,
+            'email' => $this->email,
+            'phone' => $this->phone ?: null,
+            'date_of_birth' => $this->dateOfBirth,
+            'email_phi' => $this->emailPhi,
+            'preferred_date' => $this->preferredDate,
+            'preferred_time' => $this->preferredTime,
+            'triage_data' => [
+                'urgency_flag' => false,
+            ],
+        ]);
+
+        $this->waitlistEntryId = $entry->id;
+        $this->waitlistTier = $entry->tier;
+        $this->waitlistScore = $entry->priority_score;
         $this->step = 6;
     }
 
@@ -341,6 +453,19 @@ class Wizard extends Component
                 'providerName' => $provider->full_name,
             ])
             ->all();
+    }
+
+    private function resetInsuranceFields(): void
+    {
+        $this->insuranceProvider = '';
+        $this->insuranceMemberId = '';
+        $this->insuranceGroupId = '';
+        $this->insurancePlan = '';
+        $this->insuranceSubscriberName = '';
+        $this->insuranceSubscriberDob = '';
+        $this->insuranceRelationship = 'self';
+        $this->insurancePhone = '';
+        $this->insuranceUrgency = 'standard';
     }
 
     public function render()

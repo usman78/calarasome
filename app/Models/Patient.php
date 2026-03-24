@@ -19,12 +19,14 @@ class Patient extends Model
         'date_of_birth',
         'is_shared_email_account',
         'communication_consent',
+        'no_show_count',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
         'is_shared_email_account' => 'boolean',
         'communication_consent' => 'array',
+        'no_show_count' => 'integer',
     ];
 
     public function clinic(): BelongsTo
@@ -35,5 +37,10 @@ class Patient extends Model
     public function matchAlerts(): HasMany
     {
         return $this->hasMany(PatientMatchAlert::class);
+    }
+
+    public function insuranceVerifications(): HasMany
+    {
+        return $this->hasMany(InsuranceVerification::class);
     }
 }

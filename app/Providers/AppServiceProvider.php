@@ -3,9 +3,13 @@
 namespace App\Providers;
 
 use App\Models\AppointmentType;
+use App\Models\Appointment;
 use App\Models\Provider;
+use App\Models\WaitlistEntry;
+use App\Policies\AppointmentPolicy;
 use App\Policies\AppointmentTypePolicy;
 use App\Policies\ProviderPolicy;
+use App\Policies\WaitlistEntryPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -28,8 +32,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Appointment::class, AppointmentPolicy::class);
         Gate::policy(Provider::class, ProviderPolicy::class);
         Gate::policy(AppointmentType::class, AppointmentTypePolicy::class);
+        Gate::policy(WaitlistEntry::class, WaitlistEntryPolicy::class);
 
         $this->configureDefaults();
     }

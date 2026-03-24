@@ -23,6 +23,21 @@ class StripeGateway
         return $this->get("setup_intents/{$id}");
     }
 
+    public function cancelPaymentIntent(string $id): array
+    {
+        return $this->post("payment_intents/{$id}/cancel", []);
+    }
+
+    public function capturePaymentIntent(string $id, array $payload = []): array
+    {
+        return $this->post("payment_intents/{$id}/capture", $payload);
+    }
+
+    public function createRefund(array $payload): array
+    {
+        return $this->post('refunds', $payload);
+    }
+
     private function post(string $path, array $payload): array
     {
         $response = $this->request()->asForm()->post($this->url($path), $payload);

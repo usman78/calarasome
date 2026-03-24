@@ -21,6 +21,15 @@ class CreateAppointmentRequest extends FormRequest
             'date_of_birth' => ['required', 'date'],
             'email_consent' => ['required', 'accepted'],
             'email_phi' => ['required', 'boolean'],
+            'insurance_provider' => ['nullable', 'string', 'max:255'],
+            'insurance_member_id' => ['nullable', 'string', 'max:255'],
+            'insurance_group_id' => ['nullable', 'string', 'max:255'],
+            'insurance_plan' => ['nullable', 'string', 'max:255'],
+            'insurance_subscriber_name' => ['nullable', 'string', 'max:255'],
+            'insurance_subscriber_dob' => ['nullable', 'date'],
+            'insurance_relationship' => ['nullable', 'string', 'max:50'],
+            'insurance_phone' => ['nullable', 'string', 'max:255'],
+            'insurance_urgency' => ['nullable', 'in:standard,high,critical'],
         ];
     }
 }

@@ -1,5 +1,5 @@
 ﻿<div x-data class="mx-auto w-full max-w-7xl space-y-6">
-    <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+    <div class="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
         <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
                 <flux:heading size="xl">Provider Management</flux:heading>
@@ -30,13 +30,17 @@
 
     <div class="grid gap-6 xl:grid-cols-12">
         <div class="space-y-3 xl:col-span-4">
-            <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
+            <div class="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
                 <div class="mb-4 flex items-center justify-between">
                     <div>
                         <flux:heading size="lg">Providers</flux:heading>
-                        <p class="text-xs text-zinc-500">{{ count($providers) }} total</p>
+                        <p class="text-xs text-zinc-500">{{ $providers instanceof \Illuminate\Pagination\LengthAwarePaginator ? $providers->total() : count($providers) }} total</p>
                     </div>
                     <flux:button size="sm" variant="filled" wire:click="newProvider" wire:loading.attr="disabled" wire:target="newProvider,saveProvider,deleteProvider,selectProvider">New</flux:button>
+                </div>
+
+                <div class="mb-3">
+                    <flux:input wire:model.live="search" label="Search Providers" type="text" placeholder="Search name, title, email..." />
                 </div>
 
                 <div class="space-y-2">
@@ -67,21 +71,32 @@
                     <span class="inline-block size-2 animate-pulse rounded-full bg-zinc-500"></span>
                     Updating providers...
                 </div>
+
+                @if ($providers instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                    <div class="mt-3">
+                        {{ $providers->links() }}
+                    </div>
+                @endif
             </div>
         </div>
 
         <div class="space-y-6 xl:col-span-8">
-            @if (! $selectedProviderId && $providers !== [])
+            @php
+                $hasProviders = $providers instanceof \Illuminate\Pagination\LengthAwarePaginator
+                    ? $providers->total() > 0
+                    : $providers !== [];
+            @endphp
+            @if (! $selectedProviderId && $hasProviders)
                 <div class="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-3 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/30 dark:text-zinc-300">
                     Select a provider from the left panel to edit profile, schedules, and blocked times.
                 </div>
             @endif
 
-            <div class="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
-                <div class="flex items-center justify-between">
+            <div class="space-y-4 rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">Provider Profile</flux:heading>
                     @if ($selectedProviderId)
-                        <flux:button variant="danger" size="sm" x-on:click.prevent="if (confirm('Delete or deactivate this provider? Existing appointments keep history.')) { $wire.deleteProvider({{ $selectedProviderId }}) }" wire:loading.attr="disabled" wire:target="deleteProvider,saveProvider">Delete / Deactivate</flux:button>
+                        <flux:button class="w-full sm:w-auto" variant="danger" size="sm" x-on:click.prevent="if (confirm('Delete or deactivate this provider? Existing appointments keep history.')) { $wire.deleteProvider({{ $selectedProviderId }}) }" wire:loading.attr="disabled" wire:target="deleteProvider,saveProvider">Delete / Deactivate</flux:button>
                     @endif
                 </div>
 
@@ -89,7 +104,7 @@
                     <p class="text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                 @enderror
 
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid gap-3 sm:gap-4 md:grid-cols-2">
                     <div>
                         <flux:input wire:model="fullName" label="Full Name" type="text" required />
                         @error('fullName')
@@ -134,7 +149,7 @@
                     </div>
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid gap-3 sm:gap-4 md:grid-cols-2">
                     <flux:switch wire:model="isActive" label="Active" />
                     <flux:switch wire:model="isAcceptingNewPatients" label="Accepting New Patients" />
                 </div>
@@ -144,15 +159,15 @@
                     Saving provider changes...
                 </div>
 
-                <div class="flex justify-end">
-                    <flux:button variant="primary" wire:click="saveProvider" wire:loading.attr="disabled" wire:target="saveProvider,deleteProvider">Save Provider</flux:button>
+                <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <flux:button class="w-full sm:w-auto" variant="primary" wire:click="saveProvider" wire:loading.attr="disabled" wire:target="saveProvider,deleteProvider">Save Provider</flux:button>
                 </div>
             </div>
 
-            <div class="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
-                <div class="flex items-center justify-between">
+            <div class="space-y-4 rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">Schedules</flux:heading>
-                    <flux:button variant="filled" size="sm" wire:click="addScheduleRow" wire:loading.attr="disabled" wire:target="addScheduleRow,removeScheduleRow,saveSchedules">Add Row</flux:button>
+                    <flux:button class="w-full sm:w-auto" variant="filled" size="sm" wire:click="addScheduleRow" wire:loading.attr="disabled" wire:target="addScheduleRow,removeScheduleRow,saveSchedules">Add Row</flux:button>
                 </div>
 
                 @error('schedules')
@@ -162,7 +177,7 @@
                 @php($days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])
                 <div class="space-y-3">
                     @foreach ($schedules as $idx => $schedule)
-                        <div class="grid gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 md:grid-cols-6">
+                        <div class="grid gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 sm:grid-cols-2 lg:grid-cols-6">
                             <div>
                                 <flux:select wire:model="schedules.{{ $idx }}.day_of_week" label="Day">
                                     @foreach ($days as $dayIndex => $dayLabel)
@@ -211,15 +226,15 @@
                     Updating schedules...
                 </div>
 
-                <div class="flex justify-end">
-                    <flux:button variant="primary" wire:click="saveSchedules" wire:loading.attr="disabled" wire:target="addScheduleRow,removeScheduleRow,saveSchedules">Save Schedules</flux:button>
+                <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <flux:button class="w-full sm:w-auto" variant="primary" wire:click="saveSchedules" wire:loading.attr="disabled" wire:target="addScheduleRow,removeScheduleRow,saveSchedules">Save Schedules</flux:button>
                 </div>
             </div>
 
-            <div class="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
+            <div class="space-y-4 rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
                 <flux:heading size="lg">Blocked Times</flux:heading>
 
-                <div class="grid gap-3 md:grid-cols-3">
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <div>
                         <flux:input wire:model="blockStartDateTime" type="datetime-local" label="Start" />
                         @error('blockStartDateTime')
@@ -240,8 +255,8 @@
                     </div>
                 </div>
 
-                <div class="flex justify-end">
-                    <flux:button variant="filled" wire:click="addBlockedTime" wire:loading.attr="disabled" wire:target="addBlockedTime,deleteBlockedTime">Add Block</flux:button>
+                <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <flux:button class="w-full sm:w-auto" variant="filled" wire:click="addBlockedTime" wire:loading.attr="disabled" wire:target="addBlockedTime,deleteBlockedTime">Add Block</flux:button>
                 </div>
 
                 <div wire:loading.flex wire:target="addBlockedTime,deleteBlockedTime" class="items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
@@ -251,12 +266,12 @@
 
                 <div class="space-y-2">
                     @forelse ($blockedTimes as $block)
-                        <div class="flex items-center justify-between rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700">
+                        <div class="flex flex-col gap-2 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <div>{{ $block['start_datetime'] }} to {{ $block['end_datetime'] }}</div>
                                 <div class="text-zinc-500">{{ $block['reason'] ?: 'No reason' }}</div>
                             </div>
-                            <flux:button variant="ghost" size="sm" x-on:click.prevent="if (confirm('Delete this blocked time period?')) { $wire.deleteBlockedTime({{ $block['id'] }}) }" wire:loading.attr="disabled" wire:target="deleteBlockedTime,addBlockedTime">Delete</flux:button>
+                            <flux:button class="w-full sm:w-auto" variant="ghost" size="sm" x-on:click.prevent="if (confirm('Delete this blocked time period?')) { $wire.deleteBlockedTime({{ $block['id'] }}) }" wire:loading.attr="disabled" wire:target="deleteBlockedTime,addBlockedTime">Delete</flux:button>
                         </div>
                     @empty
                         <div class="rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-sm text-zinc-500 dark:border-zinc-700">

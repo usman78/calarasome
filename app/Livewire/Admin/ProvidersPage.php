@@ -9,14 +9,16 @@ use App\Models\ProviderBlockedTime;
 use App\Models\ProviderSchedule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class ProvidersPage extends Component
 {
+    use WithPagination;
     /** @var array<int, array{id:int,name:string}> */
     public array $clinics = [];
 
-    /** @var array<int, array<string,mixed>> */
-    public array $providers = [];
+    /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string,mixed>> */
+    public $providers = [];
 
     /** @var array<int, array<string,mixed>> */
     public array $blockedTimes = [];
@@ -26,6 +28,8 @@ class ProvidersPage extends Component
 
     public ?int $clinicId = null;
     public ?int $selectedProviderId = null;
+    public string $search = '';
+    public int $perPage = 10;
 
     public string $fullName = '';
     public string $title = '';
@@ -61,8 +65,15 @@ class ProvidersPage extends Component
     {
         $this->selectedProviderId = null;
         $this->resetProviderForm();
+        $this->resetPage();
         $this->loadProviders();
         $this->selectFirstProviderIfAvailable();
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+        $this->loadProviders();
     }
 
     public function selectProvider(int $providerId): void
@@ -307,22 +318,34 @@ class ProvidersPage extends Component
 
         $this->providers = Provider::query()
             ->where('clinic_id', $this->clinicId)
+            ->when($this->search, function ($query): void {
+                $search = '%'.strtolower($this->search).'%';
+                $query->where(function ($sub) use ($search): void {
+                    $sub->whereRaw('LOWER(full_name) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(title) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(specialization) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$search]);
+                });
+            })
             ->orderBy('display_order')
-            ->get()
-            ->map(fn (Provider $provider): array => [
+            ->paginate($this->perPage)
+            ->through(fn (Provider $provider): array => [
                 'id' => $provider->id,
                 'full_name' => $provider->full_name,
                 'title' => $provider->title,
                 'is_active' => (bool) $provider->is_active,
                 'is_accepting_new_patients' => (bool) $provider->is_accepting_new_patients,
                 'display_order' => $provider->display_order,
-            ])->all();
+            ]);
     }
 
     private function selectFirstProviderIfAvailable(): void
     {
-        if ($this->providers !== [] && ! $this->selectedProviderId) {
-            $this->selectProvider((int) $this->providers[0]['id']);
+        if (! $this->selectedProviderId && $this->providers instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+            $first = $this->providers->items()[0] ?? null;
+            if ($first) {
+                $this->selectProvider((int) $first['id']);
+            }
         }
     }
 

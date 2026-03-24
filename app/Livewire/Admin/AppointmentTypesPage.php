@@ -9,20 +9,24 @@ use App\Services\AppointmentTypeProviderMappingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class AppointmentTypesPage extends Component
 {
+    use WithPagination;
     /** @var array<int, array{id:int,name:string}> */
     public array $clinics = [];
 
     /** @var array<int, array{id:int,full_name:string,is_active:bool,default_appointment_types:array<int,int>}> */
     public array $providers = [];
 
-    /** @var array<int, array<string,mixed>> */
-    public array $appointmentTypes = [];
+    /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string,mixed>> */
+    public $appointmentTypes = [];
 
     public ?int $clinicId = null;
     public ?int $selectedAppointmentTypeId = null;
+    public string $search = '';
+    public int $perPage = 10;
 
     public string $name = '';
     public int $durationMinutes = 30;
@@ -57,9 +61,16 @@ class AppointmentTypesPage extends Component
     {
         $this->selectedAppointmentTypeId = null;
         $this->resetForm();
+        $this->resetPage();
         $this->loadProviders();
         $this->loadAppointmentTypes();
         $this->selectFirstAppointmentTypeIfAvailable();
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+        $this->loadAppointmentTypes();
     }
 
     public function selectAppointmentType(int $appointmentTypeId): void
@@ -221,9 +232,13 @@ class AppointmentTypesPage extends Component
 
         $this->appointmentTypes = AppointmentType::query()
             ->where('clinic_id', $this->clinicId)
+            ->when($this->search, function ($query): void {
+                $search = '%'.strtolower($this->search).'%';
+                $query->whereRaw('LOWER(name) LIKE ?', [$search]);
+            })
             ->orderBy('name')
-            ->get()
-            ->map(function (AppointmentType $type) use ($providersByType): array {
+            ->paginate($this->perPage)
+            ->through(function (AppointmentType $type) use ($providersByType): array {
                 $names = $providersByType[$type->id] ?? [];
 
                 return [
@@ -234,14 +249,16 @@ class AppointmentTypesPage extends Component
                     'provider_count' => count($names),
                     'provider_names' => $names,
                 ];
-            })
-            ->all();
+            });
     }
 
     private function selectFirstAppointmentTypeIfAvailable(): void
     {
-        if ($this->appointmentTypes !== [] && ! $this->selectedAppointmentTypeId) {
-            $this->selectAppointmentType((int) $this->appointmentTypes[0]['id']);
+        if (! $this->selectedAppointmentTypeId && $this->appointmentTypes instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+            $first = $this->appointmentTypes->items()[0] ?? null;
+            if ($first) {
+                $this->selectAppointmentType((int) $first['id']);
+            }
         }
     }
 

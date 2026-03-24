@@ -19,11 +19,12 @@
 
     $progressPercent = (int) round(($step / 6) * 100);
     $canCompleteBooking = filled($fullName) && filled($email) && filled($dateOfBirth) && $emailConsent && filled($sessionToken);
+    $canSubmitWaitlist = filled($fullName) && filled($email) && filled($dateOfBirth) && $emailConsent;
 @endphp
 
-<div class="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50">
+<div class="mx-auto w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50">
     <div class="border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-3">
                 <span class="grid size-8 place-items-center rounded-md border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
                     <x-app-logo-icon class="size-5 fill-current text-zinc-700 dark:text-zinc-200" />
@@ -33,7 +34,7 @@
                     <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $clinic->name }}</p>
                 </div>
             </div>
-            <div class="text-right">
+            <div class="text-left sm:text-right">
                 <p class="text-xs text-zinc-500 dark:text-zinc-400">Step {{ $step }} of 6</p>
                 <p class="text-sm font-semibold text-zinc-900 dark:text-white">{{ $steps[$step] }}</p>
             </div>
@@ -52,9 +53,9 @@
 
         @if ($step === 1)
             <div class="space-y-5 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 sm:p-5">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">1. Patient Status</flux:heading>
-                    <div class="text-xs text-zinc-500 dark:text-zinc-400">Step 1 of 6</div>
+                    <div class="text-xs text-zinc-500 dark:text-zinc-400 sm:text-right">Step 1 of 6</div>
                 </div>
 
                 <div class="grid gap-3 md:grid-cols-2">
@@ -95,17 +96,17 @@
 
                 <p class="text-xs text-zinc-500 dark:text-zinc-400">You can change this selection later before booking is confirmed.</p>
 
-                <div class="flex justify-end">
-                    <flux:button variant="primary" wire:click="$set('step', 2)">Continue</flux:button>
+                <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <flux:button class="w-full sm:w-auto" variant="primary" wire:click="$set('step', 2)">Continue</flux:button>
                 </div>
             </div>
         @endif
 
         @if ($step === 2)
             <div class="space-y-5 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 sm:p-5">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">2. Treatment Selection</flux:heading>
-                    <div class="text-xs text-zinc-500 dark:text-zinc-400">Step 2 of 6</div>
+                    <div class="text-xs text-zinc-500 dark:text-zinc-400 sm:text-right">Step 2 of 6</div>
                 </div>
 
                 @if ($appointmentTypes === [])
@@ -144,17 +145,17 @@
                     Loading providers...
                 </div>
 
-                <div class="mt-5 flex justify-end">
-                    <flux:button variant="filled" wire:click="$set('step', 1)" wire:loading.attr="disabled" wire:target="chooseAppointmentType">Back</flux:button>
+                <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <flux:button class="w-full sm:w-auto" variant="filled" wire:click="$set('step', 1)" wire:loading.attr="disabled" wire:target="chooseAppointmentType">Back</flux:button>
                 </div>
             </div>
         @endif
 
         @if ($step === 3)
             <div class="space-y-5 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 sm:p-5">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">3. Choose Provider</flux:heading>
-                    <div class="text-xs text-zinc-500 dark:text-zinc-400">Step 3 of 6</div>
+                    <div class="text-xs text-zinc-500 dark:text-zinc-400 sm:text-right">Step 3 of 6</div>
                 </div>
 
                 <div class="grid gap-3 md:grid-cols-2">
@@ -213,20 +214,20 @@
                     Loading available slots...
                 </div>
 
-                <div class="mt-5 flex justify-end">
-                    <flux:button variant="filled" wire:click="$set('step', 2)" wire:loading.attr="disabled" wire:target="chooseProvider">Back</flux:button>
+                <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <flux:button class="w-full sm:w-auto" variant="filled" wire:click="$set('step', 2)" wire:loading.attr="disabled" wire:target="chooseProvider">Back</flux:button>
                 </div>
             </div>
         @endif
 
         @if ($step === 4)
             <div class="space-y-5 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 sm:p-5">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">4. Select Date and Time</flux:heading>
-                    <div class="text-xs text-zinc-500 dark:text-zinc-400">Step 4 of 6</div>
+                    <div class="text-xs text-zinc-500 dark:text-zinc-400 sm:text-right">Step 4 of 6</div>
                 </div>
 
-                <div class="max-w-xs">
+                <div class="w-full sm:max-w-xs">
                     <flux:input wire:model.live="selectedDate" label="Preferred Date" type="date" />
                     <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Times below are shown in {{ $clinic->timezone }}.</p>
                 </div>
@@ -241,6 +242,9 @@
                 @if ($availableSlots === [])
                     <div class="rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                         No available slots for this date.
+                    </div>
+                    <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                        <flux:button class="w-full sm:w-auto" variant="primary" wire:click="enterWaitlistMode">Join Waitlist</flux:button>
                     </div>
                 @else
                     <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -264,23 +268,29 @@
                     Refreshing available slots...
                 </div>
 
-                <div class="mt-5 flex justify-end">
-                    <flux:button variant="filled" wire:click="$set('step', 3)" wire:loading.attr="disabled" wire:target="reserveSlot,selectedDate">Back</flux:button>
+                <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <flux:button class="w-full sm:w-auto" variant="filled" wire:click="$set('step', 3)" wire:loading.attr="disabled" wire:target="reserveSlot,selectedDate">Back</flux:button>
                 </div>
             </div>
         @endif
 
         @if ($step === 5)
-            <div wire:poll.1s="refreshReservationTimer" class="space-y-5 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 sm:p-5">
-                <div class="flex items-center justify-between">
+            <div @if (! $isWaitlistMode) wire:poll.1s="refreshReservationTimer" @endif class="space-y-5 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 sm:p-5">
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">5. Contact, Consent and Confirm</flux:heading>
-                    <div class="text-xs text-zinc-500 dark:text-zinc-400">Step 5 of 6</div>
+                    <div class="text-xs text-zinc-500 dark:text-zinc-400 sm:text-right">Step 5 of 6</div>
                 </div>
 
-                <div class="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:bg-sky-900/30 dark:text-sky-200">
-                    Slot reserved with {{ $assignedProviderName }}. Time remaining:
-                    <strong>{{ floor($reservationSecondsRemaining / 60) }}:{{ str_pad((string) ($reservationSecondsRemaining % 60), 2, '0', STR_PAD_LEFT) }}</strong>
-                </div>
+                @if (! $isWaitlistMode)
+                    <div class="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:bg-sky-900/30 dark:text-sky-200">
+                        Slot reserved with {{ $assignedProviderName }}. Time remaining:
+                        <strong>{{ floor($reservationSecondsRemaining / 60) }}:{{ str_pad((string) ($reservationSecondsRemaining % 60), 2, '0', STR_PAD_LEFT) }}</strong>
+                    </div>
+                @else
+                    <div class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                        No slots are currently available. Join the waitlist and we'll notify you when a spot opens.
+                    </div>
+                @endif
 
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
@@ -313,6 +323,99 @@
                     </div>
                 </div>
 
+                @if ($requiresInsurance && ! $isWaitlistMode)
+                    <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900">
+                        <div class="text-sm font-semibold text-zinc-900 dark:text-white">Insurance Details (Medical Visits)</div>
+                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Needed to start verification immediately after booking.</p>
+
+                        <div class="mt-4 grid gap-4 md:grid-cols-2">
+                            <div>
+                                <flux:input wire:model="insuranceProvider" label="Insurance Provider" type="text" required />
+                                @error('insuranceProvider')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <flux:input wire:model="insuranceMemberId" label="Member ID" type="text" required />
+                                @error('insuranceMemberId')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <flux:input wire:model="insuranceGroupId" label="Group ID" type="text" />
+                                @error('insuranceGroupId')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <flux:input wire:model="insurancePlan" label="Plan Name" type="text" />
+                                @error('insurancePlan')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <flux:input wire:model="insuranceSubscriberName" label="Subscriber Name" type="text" required />
+                                @error('insuranceSubscriberName')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <flux:input wire:model="insuranceSubscriberDob" label="Subscriber Date of Birth" type="date" required />
+                                @error('insuranceSubscriberDob')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <flux:select wire:model="insuranceRelationship" label="Relationship to Subscriber" required>
+                                    <flux:select.option value="self">Self</flux:select.option>
+                                    <flux:select.option value="spouse">Spouse</flux:select.option>
+                                    <flux:select.option value="child">Child</flux:select.option>
+                                    <flux:select.option value="other">Other</flux:select.option>
+                                </flux:select>
+                                @error('insuranceRelationship')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <flux:input wire:model="insurancePhone" label="Insurance Phone" type="text" />
+                                @error('insurancePhone')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="md:col-span-2">
+                                <flux:select wire:model="insuranceUrgency" label="Visit Urgency" required>
+                                    <flux:select.option value="standard">Standard</flux:select.option>
+                                    <flux:select.option value="high">High</flux:select.option>
+                                    <flux:select.option value="critical">Critical</flux:select.option>
+                                </flux:select>
+                                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">High or critical selections alert the admin team immediately.</p>
+                                @error('insuranceUrgency')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                @if ($isWaitlistMode)
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <flux:input wire:model="preferredDate" label="Preferred Date" type="date" />
+                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optional. Helps us prioritize your request.</p>
+                            @error('preferredDate')
+                                <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <flux:input wire:model="preferredTime" label="Preferred Time" type="time" />
+                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optional. Leave blank for any time.</p>
+                            @error('preferredTime')
+                                <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+                @endif
+
                 <div class="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
                     <flux:checkbox wire:model="emailConsent" label="I consent to receive appointment reminders via email (required)." />
                     <flux:checkbox wire:model="emailPhi" label="Allow emails to include appointment details (PHI)." />
@@ -325,64 +428,94 @@
                     <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-200">{{ $message }}</div>
                 @enderror
 
-                <div wire:loading.flex wire:target="completeBooking" class="items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                <div wire:loading.flex wire:target="completeBooking,submitWaitlist" class="items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                     <span class="inline-block size-2 animate-pulse rounded-full bg-zinc-500"></span>
-                    Confirming appointment...
+                    Processing request...
                 </div>
 
-                <div class="flex justify-end gap-2">
-                    <flux:button variant="filled" wire:click="$set('step', 4)" wire:loading.attr="disabled" wire:target="completeBooking">Back</flux:button>
-                    <flux:button :disabled="! $canCompleteBooking" variant="primary" wire:click="completeBooking" wire:loading.attr="disabled" wire:target="completeBooking">
-                        <span wire:loading.remove wire:target="completeBooking">Complete Booking</span>
-                        <span wire:loading wire:target="completeBooking">Completing...</span>
-                    </flux:button>
+                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <flux:button class="w-full sm:w-auto" variant="filled" wire:click="$set('step', 4)" wire:loading.attr="disabled" wire:target="completeBooking,submitWaitlist">Back</flux:button>
+                    @if ($isWaitlistMode)
+                        <flux:button class="w-full sm:w-auto" :disabled="! $canSubmitWaitlist" variant="primary" wire:click="submitWaitlist" wire:loading.attr="disabled" wire:target="submitWaitlist">
+                            <span wire:loading.remove wire:target="submitWaitlist">Join Waitlist</span>
+                            <span wire:loading wire:target="submitWaitlist">Joining...</span>
+                        </flux:button>
+                    @else
+                        <flux:button class="w-full sm:w-auto" :disabled="! $canCompleteBooking" variant="primary" wire:click="completeBooking" wire:loading.attr="disabled" wire:target="completeBooking">
+                            <span wire:loading.remove wire:target="completeBooking">Complete Booking</span>
+                            <span wire:loading wire:target="completeBooking">Completing...</span>
+                        </flux:button>
+                    @endif
                 </div>
             </div>
         @endif
 
         @if ($step === 6)
-            <div class="space-y-4 rounded-xl border border-green-300 bg-green-50 p-3 dark:border-green-700 dark:bg-green-900/20 sm:p-5">
-                <div class="flex items-center justify-between">
-                    <flux:heading size="lg">6. Confirmation</flux:heading>
-                    <div class="text-xs text-green-700 dark:text-green-200">Completed</div>
-                </div>
-                <p class="text-sm text-zinc-800 dark:text-zinc-100">
-                    Your appointment is confirmed.
-                </p>
-                <ul class="space-y-1 text-sm text-zinc-700 dark:text-zinc-200">
-                    <li><strong>Appointment ID:</strong> {{ $appointmentId }}</li>
-                    <li><strong>Provider:</strong> {{ $assignedProviderName }}</li>
-                    <li><strong>Time:</strong> {{ $confirmedSlotLocal }} ({{ $clinic->timezone }})</li>
-                </ul>
-                @if ($paymentStrategy)
-                    <div class="rounded-lg border border-green-200 bg-white px-3 py-2 text-sm text-zinc-700 dark:border-green-700 dark:bg-zinc-900 dark:text-zinc-200">
-                        <strong>Payment:</strong> {{ $paymentStatus ?? 'pending' }} ({{ $paymentStrategy }})
+            @if ($isWaitlistMode)
+                <div class="space-y-4 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-900/20 sm:p-5">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <flux:heading size="lg">6. Waitlist Confirmation</flux:heading>
+                        <div class="text-xs text-amber-700 dark:text-amber-200 sm:text-right">Submitted</div>
                     </div>
-                @endif
-                @if ($paymentStrategy && $paymentStrategy !== 'skip' && $paymentClientSecret)
-                    <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-950">
-                        <div class="text-sm font-semibold text-zinc-900 dark:text-white">Complete Deposit</div>
-                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Your deposit is required to finalize this appointment.</p>
+                    <p class="text-sm text-zinc-800 dark:text-zinc-100">
+                        You're on the waitlist. We'll notify you when a spot opens up.
+                    </p>
+                    <ul class="space-y-1 text-sm text-zinc-700 dark:text-zinc-200">
+                        <li><strong>Waitlist ID:</strong> {{ $waitlistEntryId }}</li>
+                        <li><strong>Priority Tier:</strong> {{ $waitlistTier }}</li>
+                        <li><strong>Priority Score:</strong> {{ $waitlistScore }}</li>
+                        @if ($preferredDate)
+                            <li><strong>Preferred Date:</strong> {{ $preferredDate }} {{ $preferredTime ? $preferredTime : '' }}</li>
+                        @endif
+                    </ul>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <flux:button class="w-full sm:w-auto" variant="filled" href="{{ route('home') }}" wire:navigate>Back to Home</flux:button>
+                    </div>
+                </div>
+            @else
+                <div class="space-y-4 rounded-xl border border-green-300 bg-green-50 p-3 dark:border-green-700 dark:bg-green-900/20 sm:p-5">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <flux:heading size="lg">6. Confirmation</flux:heading>
+                        <div class="text-xs text-green-700 dark:text-green-200 sm:text-right">Completed</div>
+                    </div>
+                    <p class="text-sm text-zinc-800 dark:text-zinc-100">
+                        Your appointment is confirmed.
+                    </p>
+                    <ul class="space-y-1 text-sm text-zinc-700 dark:text-zinc-200">
+                        <li><strong>Appointment ID:</strong> {{ $appointmentId }}</li>
+                        <li><strong>Provider:</strong> {{ $assignedProviderName }}</li>
+                        <li><strong>Time:</strong> {{ $confirmedSlotLocal }} ({{ $clinic->timezone }})</li>
+                    </ul>
+                    @if ($paymentStrategy)
+                        <div class="rounded-lg border border-green-200 bg-white px-3 py-2 text-sm text-zinc-700 dark:border-green-700 dark:bg-zinc-900 dark:text-zinc-200">
+                            <strong>Payment:</strong> {{ $paymentStatus ?? 'pending' }} ({{ $paymentStrategy }})
+                        </div>
+                    @endif
+                    @if ($paymentStrategy && $paymentStrategy !== 'skip' && $paymentClientSecret)
+                        <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-950">
+                            <div class="text-sm font-semibold text-zinc-900 dark:text-white">Complete Deposit</div>
+                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Your deposit is required to finalize this appointment.</p>
 
-                        <form id="payment-form" class="mt-4 space-y-3">
-                            <div
-                                id="payment-container"
-                                data-client-secret="{{ $paymentClientSecret }}"
-                                data-payment-strategy="{{ $paymentStrategy }}"
-                            >
-                                <div id="payment-element" wire:ignore></div>
-                            </div>
-                            <button id="payment-submit" type="submit" class="w-full rounded-lg bg-black px-4 py-2 text-sm font-medium text-white">
-                                Confirm Payment
-                            </button>
-                            <div id="payment-message" class="text-xs text-zinc-600 dark:text-zinc-300"></div>
-                        </form>
+                            <form id="payment-form" class="mt-4 space-y-3">
+                                <div
+                                    id="payment-container"
+                                    data-client-secret="{{ $paymentClientSecret }}"
+                                    data-payment-strategy="{{ $paymentStrategy }}"
+                                >
+                                    <div id="payment-element" wire:ignore></div>
+                                </div>
+                                <button id="payment-submit" type="submit" class="w-full rounded-lg bg-black px-4 py-2 text-sm font-medium text-white">
+                                    Confirm Payment
+                                </button>
+                                <div id="payment-message" class="text-xs text-zinc-600 dark:text-zinc-300"></div>
+                            </form>
+                        </div>
+                    @endif
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <flux:button class="w-full sm:w-auto" variant="filled" href="{{ route('home') }}" wire:navigate>Back to Home</flux:button>
                     </div>
-                @endif
-                <div class="flex gap-2">
-                    <flux:button variant="filled" href="{{ route('home') }}" wire:navigate>Back to Home</flux:button>
                 </div>
-            </div>
+            @endif
         @endif
     </div>
 </div>

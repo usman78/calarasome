@@ -10,12 +10,14 @@ use App\Models\AppointmentType;
 use App\Models\Patient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 use Throwable;
 
 class AppointmentPaymentService
 {
     public function __construct(
         private readonly StripeGateway $stripeGateway,
+        private readonly AppointmentCommunicationService $communicationService,
     ) {
     }
 
@@ -171,13 +173,18 @@ class AppointmentPaymentService
             $updates['failed_at'] = now();
         }
 
-        if ($status === 'canceled' && ! $payment->failed_at) {
-            $updates['failed_at'] = now();
+        if ($status === 'canceled') {
+            if ($payment->status === 'voided' || $payment->voided_at) {
+                $updates['status'] = 'voided';
+                $updates['voided_at'] = $payment->voided_at ?? now();
+            } elseif (! $payment->failed_at) {
+                $updates['failed_at'] = now();
+            }
         }
 
         $payment->update($updates);
 
-        if (in_array($status, ['failed', 'canceled'], true)) {
+        if (in_array($status, ['failed', 'canceled'], true) && ($updates['status'] ?? $status) !== 'voided') {
             $this->startGracePeriod($payment);
         }
 
@@ -206,6 +213,8 @@ class AppointmentPaymentService
         $payment->update([
             'status' => 'refunded',
             'failed_at' => $payment->failed_at ?? now(),
+            'refunded_at' => $payment->refunded_at ?? now(),
+            'refund_id' => $payment->refund_id ?? $chargeId,
         ]);
     }
 
@@ -244,6 +253,7 @@ class AppointmentPaymentService
 
             if ($appointment && $appointment->status !== 'cancelled_by_clinic') {
                 $appointment->update(['status' => 'cancelled_by_clinic']);
+                app(WaitlistNotificationService::class)->createFromAppointment($appointment);
             }
 
             $payment->update(['status' => 'grace_expired']);
@@ -251,6 +261,169 @@ class AppointmentPaymentService
         }
 
         return $count;
+    }
+
+    /** @return array{appointment_status:string,payment_action:string,policy?:string} */
+    public function cancelByPatient(Appointment $appointment): array
+    {
+        $appointment->loadMissing(['payment', 'patient', 'clinic']);
+
+        if (in_array($appointment->status, ['cancelled_by_patient', 'cancelled_by_clinic', 'no_show'], true)) {
+            return [
+                'appointment_status' => $appointment->status,
+                'payment_action' => 'none',
+            ];
+        }
+
+        if ($appointment->slot_datetime && $appointment->slot_datetime->isPast()) {
+            throw new RuntimeException('Appointment has already passed.');
+        }
+
+        $hoursUntil = $appointment->slot_datetime
+            ? now()->diffInHours($appointment->slot_datetime, false)
+            : null;
+
+        $isLate = $hoursUntil !== null && $hoursUntil < 24;
+        $paymentAction = 'none';
+        $policy = $isLate ? 'deposit_retained' : 'no_charge';
+
+        $payment = $appointment->payment;
+        if ($payment && $payment->amount_cents > 0 && $payment->strategy !== 'skip') {
+            if ($payment->status === 'refunded') {
+                $paymentAction = 'refunded';
+                $policy = 'refund_issued';
+            } elseif ($payment->stripe_payment_intent_id) {
+                if ($isLate) {
+                    $paymentAction = $this->capturePayment($payment);
+                    $policy = 'deposit_retained';
+                } else {
+                    if ($this->isCaptured($payment)) {
+                        $paymentAction = $this->refundPayment($payment);
+                        $policy = 'refund_issued';
+                    } else {
+                        $paymentAction = $this->voidPayment($payment);
+                    }
+                }
+            } else {
+                $paymentAction = $this->voidPayment($payment);
+            }
+        }
+
+        $appointment->update(['status' => 'cancelled_by_patient']);
+
+        if ($appointment->patient) {
+            $this->communicationService->sendPatientCancellationEmail(
+                $appointment,
+                $appointment->patient,
+                $policy
+            );
+        }
+
+        app(WaitlistNotificationService::class)->createFromAppointment($appointment);
+
+        return [
+            'appointment_status' => 'cancelled_by_patient',
+            'payment_action' => $paymentAction,
+            'policy' => $policy,
+        ];
+    }
+
+    /** @return array{appointment_status:string,payment_action:string} */
+    public function cancelByClinic(Appointment $appointment): array
+    {
+        $appointment->loadMissing(['payment', 'patient', 'clinic']);
+
+        if (in_array($appointment->status, ['cancelled_by_patient', 'cancelled_by_clinic'], true)) {
+            return [
+                'appointment_status' => $appointment->status,
+                'payment_action' => 'none',
+            ];
+        }
+
+        $paymentAction = 'none';
+        $refunded = false;
+
+        $payment = $appointment->payment;
+        if ($payment && $payment->amount_cents > 0 && $payment->strategy !== 'skip') {
+            if ($payment->status === 'refunded') {
+                $paymentAction = 'refunded';
+                $refunded = true;
+            } elseif ($payment->stripe_payment_intent_id) {
+                if ($this->isCaptured($payment)) {
+                    $paymentAction = $this->refundPayment($payment);
+                    $refunded = true;
+                } else {
+                    $paymentAction = $this->voidPayment($payment);
+                }
+            } else {
+                $paymentAction = $this->voidPayment($payment);
+            }
+        }
+
+        $appointment->update(['status' => 'cancelled_by_clinic']);
+
+        if ($appointment->patient) {
+            $this->communicationService->sendClinicCancellationEmail(
+                $appointment,
+                $appointment->patient,
+                $refunded
+            );
+        }
+
+        app(WaitlistNotificationService::class)->createFromAppointment($appointment);
+
+        return [
+            'appointment_status' => 'cancelled_by_clinic',
+            'payment_action' => $paymentAction,
+        ];
+    }
+
+    /** @return array{appointment_status:string,payment_action:string} */
+    public function markNoShow(Appointment $appointment, bool $chargeDeposit): array
+    {
+        $appointment->loadMissing(['payment', 'patient', 'clinic']);
+
+        if (in_array($appointment->status, ['cancelled_by_patient', 'cancelled_by_clinic'], true)) {
+            throw new RuntimeException('Cannot mark a cancelled appointment as no-show.');
+        }
+
+        if ($appointment->status === 'no_show') {
+            return [
+                'appointment_status' => 'no_show',
+                'payment_action' => 'none',
+            ];
+        }
+
+        if ($appointment->slot_datetime && $appointment->slot_datetime->isFuture()) {
+            throw new RuntimeException('Cannot mark a future appointment as no-show.');
+        }
+
+        $paymentAction = 'none';
+        $payment = $appointment->payment;
+
+        if ($chargeDeposit && $payment && $payment->amount_cents > 0 && $payment->strategy !== 'skip') {
+            if (! $payment->stripe_payment_intent_id) {
+                throw new RuntimeException('No payment intent available to capture.');
+            }
+
+            if (! $this->isCaptured($payment)) {
+                $paymentAction = $this->capturePayment($payment);
+            } else {
+                $paymentAction = 'captured';
+            }
+        }
+
+        $appointment->update(['status' => 'no_show']);
+
+        if ($appointment->patient) {
+            $appointment->patient->increment('no_show_count');
+            $this->communicationService->sendNoShowEmail($appointment, $appointment->patient, $payment?->amount_cents ?? 0);
+        }
+
+        return [
+            'appointment_status' => 'no_show',
+            'payment_action' => $paymentAction,
+        ];
     }
 
     public function authorizeScheduledHolds(): int
@@ -359,5 +532,75 @@ class AppointmentPaymentService
                 'grace_expires_at' => $details['grace_expires_at'],
             ]));
         }
+    }
+
+    private function isCaptured(AppointmentPayment $payment): bool
+    {
+        return (bool) ($payment->captured_at) || in_array($payment->status, ['succeeded', 'captured'], true);
+    }
+
+    private function voidPayment(AppointmentPayment $payment): string
+    {
+        if ($payment->status === 'voided') {
+            return 'voided';
+        }
+
+        if (
+            $payment->stripe_payment_intent_id
+            && ! in_array($payment->status, ['failed', 'canceled', 'refunded', 'disputed', 'grace_expired'], true)
+        ) {
+            $this->stripeGateway->cancelPaymentIntent($payment->stripe_payment_intent_id);
+        }
+
+        $payment->update([
+            'status' => 'voided',
+            'voided_at' => $payment->voided_at ?? now(),
+            'auth_scheduled_for' => null,
+        ]);
+
+        return 'voided';
+    }
+
+    private function capturePayment(AppointmentPayment $payment): string
+    {
+        if ($this->isCaptured($payment)) {
+            return 'captured';
+        }
+
+        if (! $payment->stripe_payment_intent_id) {
+            throw new RuntimeException('Unable to capture payment without payment intent.');
+        }
+
+        $this->stripeGateway->capturePaymentIntent($payment->stripe_payment_intent_id);
+
+        $payment->update([
+            'status' => 'succeeded',
+            'captured_at' => $payment->captured_at ?? now(),
+        ]);
+
+        return 'captured';
+    }
+
+    private function refundPayment(AppointmentPayment $payment): string
+    {
+        if ($payment->status === 'refunded') {
+            return 'refunded';
+        }
+
+        if (! $payment->stripe_payment_intent_id) {
+            throw new RuntimeException('Unable to refund without payment intent.');
+        }
+
+        $refund = $this->stripeGateway->createRefund([
+            'payment_intent' => $payment->stripe_payment_intent_id,
+        ]);
+
+        $payment->update([
+            'status' => 'refunded',
+            'refunded_at' => $payment->refunded_at ?? now(),
+            'refund_id' => $refund['id'] ?? $payment->refund_id,
+        ]);
+
+        return 'refunded';
     }
 }

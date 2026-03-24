@@ -18,6 +18,7 @@ use App\Services\AppointmentPaymentService;
 use App\Services\PatientMatchingService;
 use App\Services\ProviderAssignmentService;
 use App\Services\SlotAvailabilityService;
+use App\Services\InsuranceVerificationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use InvalidArgumentException;
@@ -31,6 +32,7 @@ class PublicBookingController extends Controller
         private readonly PatientMatchingService $patientMatchingService,
         private readonly AppointmentCommunicationService $appointmentCommunicationService,
         private readonly AppointmentPaymentService $appointmentPaymentService,
+        private readonly InsuranceVerificationService $insuranceVerificationService,
     ) {
     }
 
@@ -152,6 +154,23 @@ class PublicBookingController extends Controller
             return response()->json(['code' => 'RESERVATION_EXPIRED', 'message' => 'Reservation has expired.'], 409);
         }
 
+        $appointmentType = AppointmentType::query()->findOrFail($reservation->appointment_type_id);
+        $insuranceData = [];
+
+        if ($appointmentType->is_medical) {
+            $insuranceData = $request->validate([
+                'insurance_provider' => ['required', 'string', 'max:255'],
+                'insurance_member_id' => ['required', 'string', 'max:255'],
+                'insurance_group_id' => ['nullable', 'string', 'max:255'],
+                'insurance_plan' => ['nullable', 'string', 'max:255'],
+                'insurance_subscriber_name' => ['required', 'string', 'max:255'],
+                'insurance_subscriber_dob' => ['required', 'date'],
+                'insurance_relationship' => ['required', 'in:self,spouse,child,other'],
+                'insurance_phone' => ['nullable', 'string', 'max:255'],
+                'insurance_urgency' => ['required', 'in:standard,high,critical'],
+            ]);
+        }
+
         $patient = $this->patientMatchingService->findOrCreate([
             'full_name' => $validated['full_name'],
             'email' => $validated['email'],
@@ -185,12 +204,25 @@ class PublicBookingController extends Controller
             (bool) $validated['email_phi']
         );
 
-        $appointmentType = AppointmentType::query()->findOrFail($appointment->appointment_type_id);
         $payment = $this->appointmentPaymentService->initializePayment(
             $appointment,
             $appointmentType,
             $patient
         );
+
+        if ($appointmentType->is_medical) {
+            $this->insuranceVerificationService->createForAppointment($appointment, $patient, [
+                'provider' => $insuranceData['insurance_provider'] ?? null,
+                'member_id' => $insuranceData['insurance_member_id'] ?? null,
+                'group_id' => $insuranceData['insurance_group_id'] ?? null,
+                'plan' => $insuranceData['insurance_plan'] ?? null,
+                'subscriber_name' => $insuranceData['insurance_subscriber_name'] ?? null,
+                'subscriber_dob' => $insuranceData['insurance_subscriber_dob'] ?? null,
+                'relationship' => $insuranceData['insurance_relationship'] ?? null,
+                'phone' => $insuranceData['insurance_phone'] ?? null,
+                'urgency' => $insuranceData['insurance_urgency'] ?? 'standard',
+            ]);
+        }
 
         return response()->json([
             'appointmentId' => $appointment->id,

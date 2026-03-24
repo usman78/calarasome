@@ -1,5 +1,5 @@
 <div x-data class="mx-auto w-full max-w-7xl space-y-6">
-    <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+    <div class="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
         <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
                 <flux:heading size="xl">Appointment Type Management</flux:heading>
@@ -26,11 +26,11 @@
 
     <div class="grid gap-6 xl:grid-cols-12">
         <div class="space-y-3 xl:col-span-4">
-            <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
+            <div class="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
                 <div class="mb-4 flex items-center justify-between">
                     <div>
                         <flux:heading size="lg">Treatments</flux:heading>
-                        <p class="text-xs text-zinc-500">{{ count($appointmentTypes) }} total</p>
+                        <p class="text-xs text-zinc-500">{{ $appointmentTypes instanceof \Illuminate\Pagination\LengthAwarePaginator ? $appointmentTypes->total() : count($appointmentTypes) }} total</p>
                     </div>
                     <flux:button
                         size="sm"
@@ -41,6 +41,10 @@
                     >
                         New
                     </flux:button>
+                </div>
+
+                <div class="mb-3">
+                    <flux:input wire:model.live="search" label="Search Treatments" type="text" placeholder="Search by name..." />
                 </div>
 
                 <div class="space-y-2">
@@ -71,21 +75,33 @@
                     <span class="inline-block size-2 animate-pulse rounded-full bg-zinc-500"></span>
                     Updating treatments...
                 </div>
+
+                @if ($appointmentTypes instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                    <div class="mt-3">
+                        {{ $appointmentTypes->links() }}
+                    </div>
+                @endif
             </div>
         </div>
 
         <div class="space-y-6 xl:col-span-8">
-            @if (! $selectedAppointmentTypeId && $appointmentTypes !== [])
+            @php
+                $hasAppointmentTypes = $appointmentTypes instanceof \Illuminate\Pagination\LengthAwarePaginator
+                    ? $appointmentTypes->total() > 0
+                    : $appointmentTypes !== [];
+            @endphp
+            @if (! $selectedAppointmentTypeId && $hasAppointmentTypes)
                 <div class="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-3 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/30 dark:text-zinc-300">
                     Select a treatment from the left panel to edit details and provider mapping.
                 </div>
             @endif
 
-            <div class="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
-                <div class="flex items-center justify-between">
+            <div class="space-y-4 rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">Treatment Profile</flux:heading>
                     @if ($selectedAppointmentTypeId)
                         <flux:button
+                            class="w-full sm:w-auto"
                             variant="danger"
                             size="sm"
                             x-on:click.prevent="if (confirm('Delete this appointment type? Provider mappings will be removed.')) { $wire.deleteAppointmentType({{ $selectedAppointmentTypeId }}) }"
@@ -97,7 +113,7 @@
                     @endif
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid gap-3 sm:gap-4 md:grid-cols-2">
                     <div>
                         <flux:input wire:model="name" label="Name" type="text" required />
                         <p class="mt-1 text-xs text-zinc-500">Example: Initial Consultation, Acne Follow-up, Laser Session.</p>
@@ -151,7 +167,7 @@
                     </div>
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid gap-3 sm:gap-4 md:grid-cols-2">
                     <flux:switch wire:model="isActive" label="Active" />
                     <flux:switch wire:model="isMedical" label="Medical Visit (skip deposit)" />
                 </div>
@@ -203,8 +219,9 @@
                     Saving treatment changes...
                 </div>
 
-                <div class="flex justify-end">
+                <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
                     <flux:button
+                        class="w-full sm:w-auto"
                         variant="primary"
                         wire:click="saveAppointmentType"
                         wire:loading.attr="disabled"
