@@ -16,9 +16,9 @@ return new class extends Migration
             $table->string('status', 20)->default('pending');
             $table->string('urgency', 20)->default('standard');
             $table->json('insurance_data');
-            $table->timestamp('alerted_at')->nullable();
-            $table->timestamp('verified_at')->nullable();
-            $table->timestamp('failed_at')->nullable();
+            $table->dateTime('alerted_at')->nullable();
+            $table->dateTime('verified_at')->nullable();
+            $table->dateTime('failed_at')->nullable();
             $table->timestamps();
 
             $table->index(['clinic_id', 'status']);

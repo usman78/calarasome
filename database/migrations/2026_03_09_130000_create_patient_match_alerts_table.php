@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('patient_id')->nullable()->constrained()->nullOnDelete();
             $table->string('alert_type');
             $table->json('payload')->nullable();
-            $table->timestamp('resolved_at')->nullable();
+            $table->dateTime('resolved_at')->nullable();
             $table->timestamps();
 
             $table->index(['clinic_id', 'alert_type']);

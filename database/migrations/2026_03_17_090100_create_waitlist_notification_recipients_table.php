@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('waitlist_notification_recipients', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('waitlist_notification_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('waitlist_entry_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('waitlist_notification_id');
+            $table->foreignId('waitlist_entry_id');
             $table->string('token_hash', 64)->unique();
             $table->dateTime('expires_at');
             $table->string('status', 20)->default('sent');
@@ -19,8 +19,17 @@ return new class extends Migration
             $table->dateTime('claimed_at')->nullable();
             $table->timestamps();
 
-            $table->index(['waitlist_notification_id', 'status']);
-            $table->index(['waitlist_entry_id']);
+            $table->index(['waitlist_notification_id', 'status'], 'wlnr_notif_status_idx');
+            $table->index(['waitlist_entry_id'], 'wlnr_entry_idx');
+
+            $table->foreign('waitlist_notification_id', 'wlnr_notif_fk')
+                ->references('id')
+                ->on('waitlist_notifications')
+                ->cascadeOnDelete();
+            $table->foreign('waitlist_entry_id', 'wlnr_entry_fk')
+                ->references('id')
+                ->on('waitlist_entries')
+                ->cascadeOnDelete();
         });
     }
 

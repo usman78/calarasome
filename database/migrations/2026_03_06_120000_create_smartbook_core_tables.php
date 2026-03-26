@@ -29,7 +29,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->boolean('is_accepting_new_patients')->default(true);
             $table->unsignedInteger('display_order')->default(0);
-            $table->timestamp('last_auto_assigned_at')->nullable();
+            $table->dateTime('last_auto_assigned_at')->nullable();
             $table->timestamps();
 
             $table->index(['clinic_id', 'is_active']);
@@ -74,8 +74,8 @@ return new class extends Migration
         Schema::create('provider_blocked_times', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('provider_id')->constrained()->cascadeOnDelete();
-            $table->timestamp('start_datetime');
-            $table->timestamp('end_datetime');
+            $table->dateTime('start_datetime');
+            $table->dateTime('end_datetime');
             $table->string('reason')->nullable();
             $table->timestamps();
 
@@ -103,7 +103,7 @@ return new class extends Migration
             $table->foreignId('provider_id')->constrained()->cascadeOnDelete();
             $table->foreignId('appointment_type_id')->constrained()->cascadeOnDelete();
             $table->foreignId('patient_id')->constrained()->cascadeOnDelete();
-            $table->timestamp('slot_datetime');
+            $table->dateTime('slot_datetime');
             $table->string('status')->default('pending');
             $table->json('triage_data')->nullable();
             $table->timestamps();
@@ -117,12 +117,12 @@ return new class extends Migration
             $table->foreignId('clinic_id')->constrained()->cascadeOnDelete();
             $table->foreignId('provider_id')->constrained()->cascadeOnDelete();
             $table->foreignId('appointment_type_id')->constrained()->cascadeOnDelete();
-            $table->timestamp('slot_datetime');
+            $table->dateTime('slot_datetime');
             $table->string('session_token', 64)->unique();
-            $table->timestamp('reserved_at');
-            $table->timestamp('expires_at');
+            $table->dateTime('reserved_at');
+            $table->dateTime('expires_at');
             $table->foreignId('converted_to_appointment_id')->nullable()->constrained('appointments')->nullOnDelete();
-            $table->timestamp('released_at')->nullable();
+            $table->dateTime('released_at')->nullable();
             $table->timestamps();
 
             $table->index(['provider_id', 'slot_datetime']);
