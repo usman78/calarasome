@@ -25,10 +25,10 @@
                         <flux:sidebar.item icon="credit-card" :href="route('admin.payments')" :current="request()->routeIs('admin.payments')" wire:navigate>
                             {{ __('Payments') }}
                         </flux:sidebar.item>
-                        <flux:sidebar.item icon="clipboard-check" :href="route('admin.insurance-verifications')" :current="request()->routeIs('admin.insurance-verifications')" wire:navigate>
+                        <flux:sidebar.item :href="route('admin.insurance-verifications')" :current="request()->routeIs('admin.insurance-verifications')" wire:navigate>
                             {{ __('Insurance Queue') }}
                         </flux:sidebar.item>
-                        <flux:sidebar.item icon="list-bullets" :href="route('admin.waitlist')" :current="request()->routeIs('admin.waitlist')" wire:navigate>
+                        <flux:sidebar.item :href="route('admin.waitlist')" :current="request()->routeIs('admin.waitlist')" wire:navigate>
                             {{ __('Waitlist') }}
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="exclamation-triangle" :href="route('admin.patient-match-alerts')" :current="request()->routeIs('admin.patient-match-alerts')" wire:navigate>
