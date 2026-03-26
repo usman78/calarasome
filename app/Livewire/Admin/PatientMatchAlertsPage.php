@@ -16,7 +16,7 @@ class PatientMatchAlertsPage extends Component
     public array $clinics = [];
 
     /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string,mixed>> */
-    public $alerts = [];
+    protected $alerts = [];
 
     public string $clinicFilter = 'all';
     public string $search = '';
@@ -149,7 +149,11 @@ class PatientMatchAlertsPage extends Component
 
     public function render()
     {
-        return view('livewire.admin.patient-match-alerts-page');
+        $this->loadAlerts();
+
+        return view('livewire.admin.patient-match-alerts-page', [
+            'alerts' => $this->alerts,
+        ]);
     }
 
     private function ensureAdmin(): void

@@ -20,7 +20,7 @@ class WaitlistPage extends Component
     public int $perPage = 15;
 
     /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, WaitlistEntry>|null */
-    public $entryPaginator = null;
+    protected $entryPaginator = null;
 
     /** @var array<string, array<int, array<string,mixed>>> */
     public array $entries = [
@@ -110,7 +110,11 @@ class WaitlistPage extends Component
 
     public function render()
     {
-        return view('livewire.admin.waitlist-page');
+        $this->loadEntries(app(\App\Services\WaitlistPriorityService::class));
+
+        return view('livewire.admin.waitlist-page', [
+            'entryPaginator' => $this->entryPaginator,
+        ]);
     }
 
     private function ensureAdmin(): void

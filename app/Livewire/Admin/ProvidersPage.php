@@ -18,7 +18,7 @@ class ProvidersPage extends Component
     public array $clinics = [];
 
     /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string,mixed>> */
-    public $providers = [];
+    protected $providers = [];
 
     /** @var array<int, array<string,mixed>> */
     public array $blockedTimes = [];
@@ -421,6 +421,10 @@ class ProvidersPage extends Component
 
     public function render()
     {
-        return view('livewire.admin.providers-page');
+        $this->loadProviders();
+
+        return view('livewire.admin.providers-page', [
+            'providers' => $this->providers,
+        ]);
     }
 }

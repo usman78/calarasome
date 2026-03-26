@@ -16,7 +16,7 @@ class InsuranceVerificationPage extends Component
     public array $clinics = [];
 
     /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string, mixed>> */
-    public $verifications = [];
+    protected $verifications = [];
 
     public string $clinicFilter = 'all';
     public string $urgencyFilter = 'all';
@@ -163,7 +163,11 @@ class InsuranceVerificationPage extends Component
 
     public function render()
     {
-        return view('livewire.admin.insurance-verification-page');
+        $this->loadVerifications();
+
+        return view('livewire.admin.insurance-verification-page', [
+            'verifications' => $this->verifications,
+        ]);
     }
 
     private function ensureAdmin(): void

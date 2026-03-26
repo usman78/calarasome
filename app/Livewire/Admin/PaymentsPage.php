@@ -19,7 +19,7 @@ class PaymentsPage extends Component
     public array $clinics = [];
 
     /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string,mixed>> */
-    public $payments = [];
+    protected $payments = [];
 
     public string $clinicFilter = 'all';
     public string $statusFilter = 'all';
@@ -270,7 +270,11 @@ class PaymentsPage extends Component
 
     public function render()
     {
-        return view('livewire.admin.payments-page');
+        $this->loadPayments();
+
+        return view('livewire.admin.payments-page', [
+            'payments' => $this->payments,
+        ]);
     }
 
     private function ensureAdmin(): void

@@ -25,7 +25,7 @@ class DashboardPage extends Component
     public array $appointmentTypes = [];
 
     /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string, mixed>> */
-    public $appointments = [];
+    protected $appointments = [];
 
     public string $clinicFilter = 'all';
     public string $providerFilter = 'all';
@@ -318,7 +318,11 @@ class DashboardPage extends Component
 
     public function render()
     {
-        return view('livewire.admin.dashboard-page');
+        $this->loadAppointments();
+
+        return view('livewire.admin.dashboard-page', [
+            'appointments' => $this->appointments,
+        ]);
     }
 
     private function ensureAdmin(): void

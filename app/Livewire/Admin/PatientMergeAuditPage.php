@@ -14,7 +14,7 @@ class PatientMergeAuditPage extends Component
     public array $clinics = [];
 
     /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string, mixed>> */
-    public $merges = [];
+    protected $merges = [];
 
     public string $clinicFilter = 'all';
     public string $search = '';
@@ -104,7 +104,11 @@ class PatientMergeAuditPage extends Component
 
     public function render()
     {
-        return view('livewire.admin.patient-merge-audit-page');
+        $this->loadMerges();
+
+        return view('livewire.admin.patient-merge-audit-page', [
+            'merges' => $this->merges,
+        ]);
     }
 
     private function ensureAdmin(): void

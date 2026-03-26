@@ -21,7 +21,7 @@ class AppointmentTypesPage extends Component
     public array $providers = [];
 
     /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, array<string,mixed>> */
-    public $appointmentTypes = [];
+    protected $appointmentTypes = [];
 
     public ?int $clinicId = null;
     public ?int $selectedAppointmentTypeId = null;
@@ -280,6 +280,10 @@ class AppointmentTypesPage extends Component
 
     public function render()
     {
-        return view('livewire.admin.appointment-types-page');
+        $this->loadAppointmentTypes();
+
+        return view('livewire.admin.appointment-types-page', [
+            'appointmentTypes' => $this->appointmentTypes,
+        ]);
     }
 }
