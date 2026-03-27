@@ -1,4 +1,4 @@
-﻿<div x-data class="mx-auto w-full max-w-7xl space-y-6">
+<div x-data class="mx-auto w-full max-w-7xl space-y-6">
     <div class="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
         <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
@@ -23,7 +23,6 @@
             {{ session('providers_status') }}
         </div>
     @endif
-
     @error('provider')
         <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-200">{{ $message }}</div>
     @enderror
@@ -96,7 +95,7 @@
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">Provider Profile</flux:heading>
                     @if ($selectedProviderId)
-                        <flux:button class="w-full sm:w-auto" variant="danger" size="sm" x-on:click.prevent="if (confirm('Delete or deactivate this provider? Existing appointments keep history.')) { $wire.deleteProvider({{ $selectedProviderId }}) }" wire:loading.attr="disabled" wire:target="deleteProvider,saveProvider">Delete / Deactivate</flux:button>
+                        <flux:button type="button" class="w-full sm:w-auto" variant="danger" size="sm" x-on:click.prevent="if (confirm('Delete or deactivate this provider? Existing appointments keep history.')) { $wire.deleteProvider({{ $selectedProviderId }}) }" wire:loading.attr="disabled" wire:target="deleteProvider,saveProvider">Delete / Deactivate</flux:button>
                     @endif
                 </div>
 
@@ -160,7 +159,7 @@
                 </div>
 
                 <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                    <flux:button class="w-full sm:w-auto" variant="primary" wire:click="saveProvider" wire:loading.attr="disabled" wire:target="saveProvider,deleteProvider">Save Provider</flux:button>
+                    <flux:button type="button" class="w-full sm:w-auto" variant="primary" wire:click="saveProvider" wire:loading.attr="disabled" wire:target="saveProvider,deleteProvider">Save Provider</flux:button>
                 </div>
             </div>
 
@@ -177,7 +176,7 @@
                 @php($days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])
                 <div class="space-y-3">
                     @foreach ($schedules as $idx => $schedule)
-                        <div class="grid gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 sm:grid-cols-2 lg:grid-cols-6">
+                        <div class="grid gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 sm:grid-cols-2 lg:grid-cols-6" wire:key="schedule-{{ $idx }}">
                             <div>
                                 <flux:select wire:model="schedules.{{ $idx }}.day_of_week" label="Day">
                                     @foreach ($days as $dayIndex => $dayLabel)
@@ -266,7 +265,7 @@
 
                 <div class="space-y-2">
                     @forelse ($blockedTimes as $block)
-                        <div class="flex flex-col gap-2 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex flex-col gap-2 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between" wire:key="block-{{ $block['id'] }}">
                             <div>
                                 <div>{{ $block['start_datetime'] }} to {{ $block['end_datetime'] }}</div>
                                 <div class="text-zinc-500">{{ $block['reason'] ?: 'No reason' }}</div>
@@ -283,4 +282,3 @@
         </div>
     </div>
 </div>
-
