@@ -18,8 +18,16 @@
     ];
 
     $progressPercent = (int) round(($step / 6) * 100);
-    $canCompleteBooking = filled($fullName) && filled($email) && filled($dateOfBirth) && $emailConsent && filled($sessionToken);
-    $canSubmitWaitlist = filled($fullName) && filled($email) && filled($dateOfBirth) && $emailConsent;
+    $hasName = filled(trim((string) $fullName));
+    $hasEmail = filled(trim((string) $email));
+    $hasDob = filled(trim((string) $dateOfBirth));
+    $canCompleteBooking = $hasName && $hasEmail && $hasDob && $emailConsent && filled($sessionToken);
+    $canSubmitWaitlist = $hasName && $hasEmail && $hasDob && $emailConsent;
+    $missingWaitlist = [];
+    if (! $hasName) { $missingWaitlist[] = 'full name'; }
+    if (! $hasEmail) { $missingWaitlist[] = 'email'; }
+    if (! $hasDob) { $missingWaitlist[] = 'date of birth'; }
+    if (! $emailConsent) { $missingWaitlist[] = 'email consent'; }
 @endphp
 
 <div class="mx-auto w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50">
@@ -242,6 +250,9 @@
                 @if ($availableSlots === [])
                     <div class="rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                         No available slots for this date.
+                        @if ($slotEmptyReason)
+                            <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ $slotEmptyReason }}</div>
+                        @endif
                     </div>
                     <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
                         <flux:button class="w-full sm:w-auto" variant="primary" wire:click="enterWaitlistMode">Join Waitlist</flux:button>
@@ -294,28 +305,28 @@
 
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
-                        <flux:input wire:model="fullName" label="Full Name" type="text" required />
+                        <flux:input wire:model.live="fullName" label="Full Name" type="text" required />
                         <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Use legal name for patient matching.</p>
                         @error('fullName')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
-                        <flux:input wire:model="email" label="Email" type="email" required />
+                        <flux:input wire:model.live="email" label="Email" type="email" required />
                         <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Confirmation and reminders will be sent here.</p>
                         @error('email')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
-                        <flux:input wire:model="phone" label="Phone" type="text" />
+                        <flux:input wire:model.live="phone" label="Phone" type="text" />
                         <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optional, but useful for urgent updates.</p>
                         @error('phone')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
-                        <flux:input wire:model="dateOfBirth" label="Date of Birth" type="date" required />
+                        <flux:input wire:model.live="dateOfBirth" label="Date of Birth" type="date" required />
                         <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Required to avoid duplicate patient records.</p>
                         @error('dateOfBirth')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
@@ -417,12 +428,15 @@
                 @endif
 
                 <div class="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
-                    <flux:checkbox wire:model="emailConsent" label="I consent to receive appointment reminders via email (required)." />
-                    <flux:checkbox wire:model="emailPhi" label="Allow emails to include appointment details (PHI)." />
+                    <flux:checkbox wire:model.live="emailConsent" label="I consent to receive appointment reminders via email (required)." />
+                    <flux:checkbox wire:model.live="emailPhi" label="Allow emails to include appointment details (PHI)." />
                 </div>
                 @error('emailConsent')
                     <p class="text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                 @enderror
+                @if ($isWaitlistMode && ! $canSubmitWaitlist)
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Missing: {{ implode(', ', $missingWaitlist) }}.</p>
+                @endif
 
                 @error('reservation')
                     <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-200">{{ $message }}</div>

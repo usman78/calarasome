@@ -68,6 +68,7 @@ class Wizard extends Component
     public ?int $waitlistEntryId = null;
     public ?string $waitlistTier = null;
     public ?int $waitlistScore = null;
+    public ?string $slotEmptyReason = null;
 
     public ?int $appointmentId = null;
     public ?string $confirmedSlotLocal = null;
@@ -79,11 +80,22 @@ class Wizard extends Component
     {
         $this->clinic = $clinic;
         $this->selectedDate = now($clinic->timezone)->addDay()->format('Y-m-d');
+        $mappedTypeIds = Provider::query()
+            ->where('clinic_id', $clinic->id)
+            ->where('is_active', true)
+            ->whereNotNull('default_appointment_types')
+            ->get(['default_appointment_types'])
+            ->flatMap(fn (Provider $provider) => $provider->default_appointment_types ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
         $this->appointmentTypes = AppointmentType::query()
             ->where('clinic_id', $clinic->id)
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'duration_minutes', 'is_medical'])
+            ->filter(fn (AppointmentType $type): bool => in_array($type->id, $mappedTypeIds, true))
             ->map(fn (AppointmentType $type): array => [
                 'id' => $type->id,
                 'name' => $type->name,
@@ -98,6 +110,7 @@ class Wizard extends Component
         $this->providerSelection = null;
         $this->slotLocalDatetime = null;
         $this->sessionToken = null;
+        $this->slotEmptyReason = null;
         $this->isWaitlistMode = false;
         $this->requiresInsurance = (bool) (collect($this->appointmentTypes)->firstWhere('id', $appointmentTypeId)['is_medical'] ?? false);
         if (! $this->requiresInsurance) {
@@ -119,6 +132,7 @@ class Wizard extends Component
         $this->providerSelection = $providerSelection;
         $this->slotLocalDatetime = null;
         $this->sessionToken = null;
+        $this->slotEmptyReason = null;
         $this->isWaitlistMode = false;
         $this->loadSlots();
         $this->step = 4;
@@ -127,6 +141,7 @@ class Wizard extends Component
     public function updatedSelectedDate(): void
     {
         if ($this->step >= 4 && $this->providerSelection !== null) {
+            $this->slotEmptyReason = null;
             $this->loadSlots();
         }
     }
@@ -309,6 +324,7 @@ class Wizard extends Component
         $this->slotLocalDatetime = null;
         $this->assignedProviderId = null;
         $this->assignedProviderName = null;
+        $this->slotEmptyReason = null;
         $this->preferredDate = $this->selectedDate ?: now($this->clinic->timezone)->format('Y-m-d');
         $this->preferredTime = null;
         $this->step = 5;
@@ -399,6 +415,7 @@ class Wizard extends Component
     private function loadSlots(): void
     {
         $this->availableSlots = [];
+        $this->slotEmptyReason = null;
 
         if (! $this->appointmentTypeId || ! $this->providerSelection) {
             return;
@@ -417,6 +434,11 @@ class Wizard extends Component
 
         if ($this->providerSelection === 'any') {
             $providerIds = collect($this->providers)->pluck('id')->all();
+            if ($providerIds === []) {
+                $this->slotEmptyReason = 'No providers are mapped to this treatment yet. Add a provider in Admin → Appointment Types.';
+
+                return;
+            }
             $providers = Provider::query()->whereIn('id', $providerIds)->get();
 
             $merged = [];
@@ -437,6 +459,10 @@ class Wizard extends Component
             ksort($merged);
             $this->availableSlots = array_values($merged);
 
+            if ($this->availableSlots === []) {
+                $this->slotEmptyReason = 'No availability for the selected date. Check provider schedules or pick another day.';
+            }
+
             return;
         }
 
@@ -453,6 +479,10 @@ class Wizard extends Component
                 'providerName' => $provider->full_name,
             ])
             ->all();
+
+        if ($this->availableSlots === []) {
+            $this->slotEmptyReason = 'No availability for the selected date. Check provider schedules or pick another day.';
+        }
     }
 
     private function resetInsuranceFields(): void
