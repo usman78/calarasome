@@ -193,7 +193,7 @@ class WaitlistNotificationService
                 return ['status' => 'unavailable'];
             }
 
-            if (! $this->slotAvailabilityService->isSlotAvailable($notification->clinic, $provider, $notification->slot_datetime)) {
+            if (! $this->slotAvailabilityService->isSlotAvailable($notification->clinic, $provider, $appointmentType, $notification->slot_datetime)) {
                 $notification->update([
                     'status' => 'expired',
                     'next_round_at' => null,

@@ -53,7 +53,7 @@ class SlotAvailabilityService
             ->filter(function (CarbonImmutable $slot) use ($clinic): bool {
                 return $slot->greaterThanOrEqualTo(now()->addHours($clinic->min_booking_notice_hours)->utc());
             })
-            ->filter(fn (CarbonImmutable $slot) => $this->isSlotAvailable($clinic, $provider, $slot))
+            ->filter(fn (CarbonImmutable $slot) => $this->isSlotAvailable($clinic, $provider, $appointmentType, $slot))
             ->map(fn (CarbonImmutable $slot) => [
                 'slotUtc' => $slot->toIso8601String(),
                 'slotLocal' => $slot->setTimezone($clinic->timezone)->format('Y-m-d H:i:s'),
@@ -78,40 +78,79 @@ class SlotAvailabilityService
         ]);
     }
 
-    public function isSlotAvailable(Clinic $clinic, Provider $provider, CarbonImmutable $slotUtc): bool
+    public function isSlotAvailable(Clinic $clinic, Provider $provider, AppointmentType $appointmentType, CarbonImmutable $slotUtc): bool
     {
         if ($slotUtc->lessThan(now()->addHours($clinic->min_booking_notice_hours)->utc())) {
             return false;
         }
 
+        $slotStart = $slotUtc;
+        $slotEnd = $slotUtc->addMinutes($appointmentType->duration_minutes);
+
         $blocked = ProviderBlockedTime::query()
             ->where('provider_id', $provider->id)
-            ->where('start_datetime', '<=', $slotUtc)
-            ->where('end_datetime', '>', $slotUtc)
+            ->where('start_datetime', '<', $slotEnd)
+            ->where('end_datetime', '>', $slotStart)
             ->exists();
 
         if ($blocked) {
             return false;
         }
 
-        $hasAppointment = Appointment::query()
-            ->where('provider_id', $provider->id)
-            ->where('slot_datetime', $slotUtc)
-            ->whereNotIn('status', ['cancelled_by_patient', 'cancelled_by_clinic'])
-            ->exists();
+        $windowStart = $slotStart->subMinutes(240);
 
-        if ($hasAppointment) {
-            return false;
+        $appointments = Appointment::query()
+            ->where('provider_id', $provider->id)
+            ->where('slot_datetime', '<', $slotEnd)
+            ->where('slot_datetime', '>', $windowStart)
+            ->whereNotIn('status', ['cancelled_by_patient', 'cancelled_by_clinic'])
+            ->get(['slot_datetime', 'appointment_type_id']);
+
+        if ($appointments->isNotEmpty()) {
+            $typeDurations = AppointmentType::query()
+                ->whereIn('id', $appointments->pluck('appointment_type_id')->filter()->unique())
+                ->pluck('duration_minutes', 'id');
+
+            foreach ($appointments as $appointment) {
+                $duration = (int) ($typeDurations[$appointment->appointment_type_id] ?? 0);
+                if ($duration <= 0) {
+                    continue;
+                }
+                $existingStart = CarbonImmutable::parse($appointment->slot_datetime);
+                $existingEnd = $existingStart->addMinutes($duration);
+                if ($existingStart->lt($slotEnd) && $existingEnd->gt($slotStart)) {
+                    return false;
+                }
+            }
         }
 
-        $activeReservation = SlotReservation::query()
+        $reservations = SlotReservation::query()
             ->where('provider_id', $provider->id)
-            ->where('slot_datetime', $slotUtc)
+            ->where('slot_datetime', '<', $slotEnd)
+            ->where('slot_datetime', '>', $windowStart)
             ->whereNull('released_at')
             ->where('expires_at', '>', now())
-            ->exists();
+            ->get(['slot_datetime', 'appointment_type_id']);
 
-        return ! $activeReservation;
+        if ($reservations->isNotEmpty()) {
+            $reservationDurations = AppointmentType::query()
+                ->whereIn('id', $reservations->pluck('appointment_type_id')->filter()->unique())
+                ->pluck('duration_minutes', 'id');
+
+            foreach ($reservations as $reservation) {
+                $duration = (int) ($reservationDurations[$reservation->appointment_type_id] ?? 0);
+                if ($duration <= 0) {
+                    continue;
+                }
+                $existingStart = CarbonImmutable::parse($reservation->slot_datetime);
+                $existingEnd = $existingStart->addMinutes($duration);
+                if ($existingStart->lt($slotEnd) && $existingEnd->gt($slotStart)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private function buildScheduleSlots(Clinic $clinic, CarbonImmutable $localDate, string $startTime, string $endTime, int $durationMinutes): Collection

@@ -169,7 +169,7 @@ class Wizard extends Component
             ? app(ProviderAssignmentService::class)->resolveProviderForAnyAvailable($this->clinic->id, $appointmentType->id, $slotUtc)
             : Provider::query()->where('clinic_id', $this->clinic->id)->find((int) $this->providerSelection);
 
-        if (! $provider || ! $slotService->isSlotAvailable($this->clinic, $provider, $slotUtc)) {
+        if (! $provider || ! $slotService->isSlotAvailable($this->clinic, $provider, $appointmentType, $slotUtc)) {
             throw ValidationException::withMessages(['slot' => 'Selected slot is no longer available.']);
         }
 

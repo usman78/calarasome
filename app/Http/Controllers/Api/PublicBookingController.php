@@ -125,7 +125,7 @@ class PublicBookingController extends Controller
             return response()->json(['message' => 'Provider is not mapped to appointment type.'], 422);
         }
 
-        if (! $this->slotAvailabilityService->isSlotAvailable($clinic, $provider, $slotUtc)) {
+        if (! $this->slotAvailabilityService->isSlotAvailable($clinic, $provider, $appointmentType, $slotUtc)) {
             return response()->json(['code' => 'SLOT_RESERVED', 'message' => 'Slot is no longer available.'], 409);
         }
 
