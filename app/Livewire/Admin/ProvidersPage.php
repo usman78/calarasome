@@ -97,14 +97,26 @@ class ProvidersPage extends Component
             ->where('provider_id', $provider->id)
             ->orderBy('day_of_week')
             ->get()
-            ->map(fn (ProviderSchedule $schedule): array => [
-                'day_of_week' => $schedule->day_of_week,
-                'start_time' => $schedule->start_time,
-                'end_time' => $schedule->end_time,
+            ->map(function (ProviderSchedule $schedule): array {
+                $start = $schedule->start_time;
+                $end = $schedule->end_time;
+
+                if (is_string($start) && strlen($start) >= 5) {
+                    $start = substr($start, 0, 5);
+                }
+                if (is_string($end) && strlen($end) >= 5) {
+                    $end = substr($end, 0, 5);
+                }
+
+                return [
+                    'day_of_week' => $schedule->day_of_week,
+                    'start_time' => $start,
+                    'end_time' => $end,
                 'effective_from' => $schedule->effective_from?->format('Y-m-d'),
                 'effective_until' => $schedule->effective_until?->format('Y-m-d'),
                 'is_active' => (bool) $schedule->is_active,
-            ])->all();
+                ];
+            })->all();
 
         if ($this->schedules === []) {
             $this->schedules[] = $this->newScheduleRow();
@@ -235,8 +247,8 @@ class ProvidersPage extends Component
         $this->validate([
             'schedules' => ['required', 'array', 'min:1'],
             'schedules.*.day_of_week' => ['required', 'integer', 'between:0,6'],
-            'schedules.*.start_time' => ['required', 'date_format:H:i:s'],
-            'schedules.*.end_time' => ['required', 'date_format:H:i:s'],
+            'schedules.*.start_time' => ['required', 'date_format:H:i'],
+            'schedules.*.end_time' => ['required', 'date_format:H:i'],
             'schedules.*.effective_from' => ['nullable', 'date'],
             'schedules.*.effective_until' => ['nullable', 'date'],
             'schedules.*.is_active' => ['boolean'],
@@ -246,19 +258,31 @@ class ProvidersPage extends Component
 
         ProviderSchedule::query()->where('provider_id', $this->selectedProviderId)->delete();
 
-        $rows = collect($this->schedules)->map(fn (array $row): array => [
-            'clinic_id' => $this->clinicId,
-            'provider_id' => $this->selectedProviderId,
-            'day_of_week' => (int) $row['day_of_week'],
-            'start_time' => $row['start_time'],
-            'end_time' => $row['end_time'],
-            'appointment_type_ids' => null,
-            'effective_from' => $row['effective_from'] ?: null,
-            'effective_until' => $row['effective_until'] ?: null,
-            'is_active' => (bool) ($row['is_active'] ?? true),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ])->all();
+        $rows = collect($this->schedules)->map(function (array $row): array {
+            $start = $row['start_time'];
+            $end = $row['end_time'];
+
+            if (strlen($start) === 5) {
+                $start .= ':00';
+            }
+            if (strlen($end) === 5) {
+                $end .= ':00';
+            }
+
+            return [
+                'clinic_id' => $this->clinicId,
+                'provider_id' => $this->selectedProviderId,
+                'day_of_week' => (int) $row['day_of_week'],
+                'start_time' => $start,
+                'end_time' => $end,
+                'appointment_type_ids' => null,
+                'effective_from' => $row['effective_from'] ?: null,
+                'effective_until' => $row['effective_until'] ?: null,
+                'is_active' => (bool) ($row['is_active'] ?? true),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        })->all();
 
         ProviderSchedule::query()->insert($rows);
         $this->selectProvider($this->selectedProviderId);
@@ -372,8 +396,8 @@ class ProvidersPage extends Component
     {
         return [
             'day_of_week' => 1,
-            'start_time' => '09:00:00',
-            'end_time' => '17:00:00',
+            'start_time' => '09:00',
+            'end_time' => '17:00',
             'effective_from' => null,
             'effective_until' => null,
             'is_active' => true,
