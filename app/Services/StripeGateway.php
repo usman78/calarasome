@@ -40,6 +40,7 @@ class StripeGateway
 
     private function post(string $path, array $payload): array
     {
+        $payload = $this->normalizeStripePayload($payload);
         $response = $this->request()->asForm()->post($this->url($path), $payload);
 
         if (! $response->successful()) {
@@ -74,5 +75,26 @@ class StripeGateway
     private function url(string $path): string
     {
         return 'https://api.stripe.com/v1/'.$path;
+    }
+
+    private function normalizeStripePayload(array $payload): array
+    {
+        $normalized = [];
+
+        foreach ($payload as $key => $value) {
+            if (is_array($value)) {
+                $normalized[$key] = $this->normalizeStripePayload($value);
+                continue;
+            }
+
+            if (is_bool($value)) {
+                $normalized[$key] = $value ? 'true' : 'false';
+                continue;
+            }
+
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
     }
 }

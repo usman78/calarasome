@@ -43,22 +43,23 @@ class AppointmentPaymentService
         }
 
         $amount = (int) ($appointmentType->deposit_amount_cents ?? 0);
-        $currency = $appointmentType->deposit_currency ?: 'usd';
+        $currency = strtolower($appointmentType->deposit_currency ?: 'usd');
+        $minimum = $this->minimumChargeAmount($currency);
 
-        if ($appointmentType->is_medical || $amount <= 0) {
+        if ($appointmentType->is_medical || $amount <= 0 || $amount < $minimum) {
             AppointmentPayment::query()->create([
                 'appointment_id' => $appointment->id,
                 'patient_id' => $patient->id,
                 'appointment_type_id' => $appointmentType->id,
                 'strategy' => 'skip',
-                'status' => 'skipped',
+                'status' => $amount < $minimum ? 'skipped_minimum' : 'skipped',
                 'amount_cents' => $amount,
                 'currency' => $currency,
             ]);
 
             return [
                 'strategy' => 'skip',
-                'status' => 'skipped',
+                'status' => $amount < $minimum ? 'skipped_minimum' : 'skipped',
                 'client_secret' => null,
             ];
         }
@@ -602,5 +603,13 @@ class AppointmentPaymentService
         ]);
 
         return 'refunded';
+    }
+
+    private function minimumChargeAmount(string $currency): int
+    {
+        return match (strtolower($currency)) {
+            'usd' => 50,
+            default => 50,
+        };
     }
 }

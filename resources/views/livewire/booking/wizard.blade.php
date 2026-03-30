@@ -518,9 +518,10 @@
                                 >
                                     <div id="payment-element" wire:ignore></div>
                                 </div>
-                                <button id="payment-submit" type="submit" class="w-full rounded-lg bg-black px-4 py-2 text-sm font-medium text-white">
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Enter card details and press Confirm Payment.</p>
+                                <flux:button id="payment-submit" as="button" type="submit" class="w-full" variant="primary" :loading="false">
                                     Confirm Payment
-                                </button>
+                                </flux:button>
                                 <div id="payment-message" class="text-xs text-zinc-600 dark:text-zinc-300"></div>
                             </form>
                         </div>
@@ -570,10 +571,17 @@
 
                 if (form && form.dataset.bound !== 'true') {
                     form.dataset.bound = 'true';
+                    if (message) {
+                        message.textContent = '';
+                    }
                     form.addEventListener('submit', async (event) => {
                         event.preventDefault();
 
                         if (!stripe || !elements) {
+                            return;
+                        }
+
+                        if (form.dataset.completed === 'true') {
                             return;
                         }
 
@@ -586,7 +594,18 @@
                         if (response.error) {
                             message.textContent = response.error.message || 'Payment failed. Please try again.';
                         } else {
-                            message.textContent = 'Payment confirmed. Thank you.';
+                            const intentStatus = response.paymentIntent?.status || response.setupIntent?.status || '';
+                            if (['succeeded', 'requires_capture'].includes(intentStatus)) {
+                                message.textContent = 'Payment confirmed. Thank you.';
+                                form.dataset.completed = 'true';
+                                const submitButton = document.getElementById('payment-submit');
+                                if (submitButton) {
+                                    submitButton.setAttribute('disabled', 'disabled');
+                                    submitButton.textContent = 'Payment Confirmed';
+                                }
+                            } else {
+                                message.textContent = 'Payment submitted. Please wait for confirmation.';
+                            }
                         }
                     });
                 }
