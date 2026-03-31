@@ -593,6 +593,9 @@
 
                         if (response.error) {
                             message.textContent = response.error.message || 'Payment failed. Please try again.';
+                            window.dispatchEvent(new CustomEvent('toast', {
+                                detail: { type: 'error', message: message.textContent }
+                            }));
                         } else {
                             const intentStatus = response.paymentIntent?.status || response.setupIntent?.status || '';
                             if (['succeeded', 'requires_capture'].includes(intentStatus)) {
@@ -603,8 +606,14 @@
                                     submitButton.setAttribute('disabled', 'disabled');
                                     submitButton.textContent = 'Payment Confirmed';
                                 }
+                                window.dispatchEvent(new CustomEvent('toast', {
+                                    detail: { type: 'success', message: 'Payment confirmed.' }
+                                }));
                             } else {
                                 message.textContent = 'Payment submitted. Please wait for confirmation.';
+                                window.dispatchEvent(new CustomEvent('toast', {
+                                    detail: { type: 'success', message: message.textContent }
+                                }));
                             }
                         }
                     });

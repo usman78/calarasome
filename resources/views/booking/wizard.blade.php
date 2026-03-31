@@ -17,6 +17,7 @@
             <livewire:booking.wizard :clinic="$clinic" />
         </main>
 
+        @include('partials.toast')
         @fluxScripts
     </body>
 </html>

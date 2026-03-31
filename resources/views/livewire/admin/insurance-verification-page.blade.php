@@ -36,12 +36,6 @@
             </div>
         </div>
 
-        @if (session()->has('insurance_verification_status'))
-            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                {{ session('insurance_verification_status') }}
-            </div>
-        @endif
-
         <div class="mt-4 grid gap-2 sm:grid-cols-3 sm:gap-3">
             <div class="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900 sm:px-4 sm:py-3">
                 <div class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Pending</div>

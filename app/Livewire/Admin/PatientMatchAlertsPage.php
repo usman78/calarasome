@@ -71,6 +71,7 @@ class PatientMatchAlertsPage extends Component
         $alert->update(['resolved_at' => now()]);
 
         session()->flash('match_alerts_status', 'Alert marked as resolved.');
+        $this->dispatch('toast', type: 'success', message: 'Alert marked as resolved.');
         $this->loadAlerts();
     }
 
@@ -80,6 +81,7 @@ class PatientMatchAlertsPage extends Component
 
         if ($sourcePatientId === $targetPatientId) {
             session()->flash('match_alerts_status', 'Select a different patient to merge into.');
+            $this->dispatch('toast', type: 'error', message: 'Select a different patient to merge into.');
             return;
         }
 
@@ -92,6 +94,7 @@ class PatientMatchAlertsPage extends Component
         $alert->update(['resolved_at' => now()]);
 
         session()->flash('match_alerts_status', 'Patients merged successfully.');
+        $this->dispatch('toast', type: 'success', message: 'Patients merged successfully.');
         $this->loadAlerts();
     }
 

@@ -32,12 +32,6 @@
         </div>
     </div>
 
-    @if (session('match_alerts_status'))
-        <div class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-200">
-            {{ session('match_alerts_status') }}
-        </div>
-    @endif
-
     <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
         <div wire:loading.flex wire:target="clinicFilter,markResolved,search" class="mb-3 items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
             <span class="inline-block size-2 animate-pulse rounded-full bg-zinc-500"></span>

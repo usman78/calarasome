@@ -18,12 +18,6 @@
         </div>
     </div>
 
-    @if (session('appointment_types_status'))
-        <div class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-200">
-            {{ session('appointment_types_status') }}
-        </div>
-    @endif
-
     <div class="grid gap-6 xl:grid-cols-12">
         <div class="space-y-3 xl:col-span-4">
             <div class="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
@@ -43,7 +37,7 @@
                     </flux:button>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-4">
                     <flux:input wire:model.live="search" label="Search Treatments" type="text" placeholder="Search by name..." />
                 </div>
 

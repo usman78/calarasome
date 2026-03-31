@@ -197,6 +197,7 @@ class ProvidersPage extends Component
         $this->loadProviders();
         $this->selectProvider($provider->id);
         session()->flash('providers_status', 'Provider saved.');
+        $this->dispatch('toast', type: 'success', message: 'Provider saved.');
     }
 
     public function deleteProvider(int $providerId): void
@@ -213,9 +214,11 @@ class ProvidersPage extends Component
         if ($hasAppointments) {
             $provider->update(['is_active' => false]);
             session()->flash('providers_status', 'Provider was deactivated (appointment history exists).');
+            $this->dispatch('toast', type: 'success', message: 'Provider deactivated (appointments exist).');
         } else {
             $provider->delete();
             session()->flash('providers_status', 'Provider deleted.');
+            $this->dispatch('toast', type: 'success', message: 'Provider deleted.');
         }
 
         $this->selectedProviderId = null;
@@ -287,6 +290,7 @@ class ProvidersPage extends Component
         ProviderSchedule::query()->insert($rows);
         $this->selectProvider($this->selectedProviderId);
         session()->flash('providers_status', 'Schedule updated.');
+        $this->dispatch('toast', type: 'success', message: 'Schedule updated.');
     }
 
     public function addBlockedTime(): void
@@ -314,6 +318,7 @@ class ProvidersPage extends Component
 
         $this->selectProvider($this->selectedProviderId);
         session()->flash('providers_status', 'Blocked period added.');
+        $this->dispatch('toast', type: 'success', message: 'Blocked period added.');
     }
 
     public function deleteBlockedTime(int $blockedId): void
@@ -330,6 +335,7 @@ class ProvidersPage extends Component
 
         $this->selectProvider($this->selectedProviderId);
         session()->flash('providers_status', 'Blocked period removed.');
+        $this->dispatch('toast', type: 'success', message: 'Blocked period removed.');
     }
 
     private function loadProviders(): void

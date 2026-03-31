@@ -18,11 +18,6 @@
         </div>
     </div>
 
-    @if (session('providers_status'))
-        <div class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-200">
-            {{ session('providers_status') }}
-        </div>
-    @endif
     @error('provider')
         <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-200">{{ $message }}</div>
     @enderror
@@ -38,7 +33,7 @@
                     <flux:button size="sm" variant="filled" wire:click="newProvider" wire:loading.attr="disabled" wire:target="newProvider,saveProvider,deleteProvider,selectProvider">New</flux:button>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-4">
                     <flux:input wire:model.live="search" label="Search Providers" type="text" placeholder="Search name, title, email..." />
                 </div>
 

@@ -80,6 +80,7 @@ class InsuranceVerificationPage extends Component
         app(InsuranceVerificationService::class)->markVerified($verification);
 
         session()->flash('insurance_verification_status', 'Verification marked as verified.');
+        $this->dispatch('toast', type: 'success', message: 'Verification marked as verified.');
         $this->loadVerifications();
     }
 
@@ -91,6 +92,7 @@ class InsuranceVerificationPage extends Component
         app(InsuranceVerificationService::class)->markFailed($verification);
 
         session()->flash('insurance_verification_status', 'Verification marked as failed and patient notified.');
+        $this->dispatch('toast', type: 'success', message: 'Verification marked as failed and patient notified.');
         $this->loadVerifications();
     }
 

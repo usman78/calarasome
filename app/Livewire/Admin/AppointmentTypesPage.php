@@ -167,6 +167,7 @@ class AppointmentTypesPage extends Component
         $this->selectAppointmentType($appointmentType->id);
 
         session()->flash('appointment_types_status', 'Appointment type saved.');
+        $this->dispatch('toast', type: 'success', message: 'Appointment type saved.');
     }
 
     public function deleteAppointmentType(int $appointmentTypeId): void
@@ -189,6 +190,7 @@ class AppointmentTypesPage extends Component
         $this->selectFirstAppointmentTypeIfAvailable();
 
         session()->flash('appointment_types_status', 'Appointment type deleted.');
+        $this->dispatch('toast', type: 'success', message: 'Appointment type deleted.');
     }
 
     private function loadProviders(): void

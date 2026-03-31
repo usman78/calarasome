@@ -113,6 +113,7 @@
 
         {{ $slot }}
 
+        @include('partials.toast')
         @livewireScripts
         @fluxScripts
     </body>
