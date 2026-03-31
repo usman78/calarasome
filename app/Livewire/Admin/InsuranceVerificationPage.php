@@ -117,11 +117,20 @@ class InsuranceVerificationPage extends Component
 
         if ($this->search) {
             $search = '%'.strtolower($this->search).'%';
-            $query->where(function ($sub) use ($search): void {
+            $driver = $query->getConnection()->getDriverName();
+            $query->where(function ($sub) use ($search, $driver): void {
                 $sub->whereHas('patient', function ($patientSub) use ($search): void {
                     $patientSub->whereRaw('LOWER(full_name) LIKE ?', [$search])
                         ->orWhereRaw('LOWER(email) LIKE ?', [$search]);
-                })->orWhereRaw('LOWER(insurance_data->>\"provider\") LIKE ?', [$search]);
+                });
+
+                if ($driver === 'sqlite') {
+                    $sub->orWhereRaw('LOWER(json_extract(insurance_data, "$.provider")) LIKE ?', [$search]);
+                } elseif ($driver === 'mysql') {
+                    $sub->orWhereRaw('LOWER(JSON_UNQUOTE(JSON_EXTRACT(insurance_data, "$.provider"))) LIKE ?', [$search]);
+                } else {
+                    $sub->orWhereRaw('LOWER(insurance_data->>\'provider\') LIKE ?', [$search]);
+                }
             });
         }
 
