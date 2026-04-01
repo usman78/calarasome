@@ -39,8 +39,8 @@
         </div>
 
         <div class="overflow-auto -mx-4 sm:mx-0 max-h-[70vh] rounded-lg border border-zinc-200/60 bg-white dark:border-zinc-800/70 dark:bg-zinc-950">
-            <div class="min-w-full px-4 sm:px-0">
-                <table class="min-w-full text-xs sm:text-sm">
+            <div class="w-full">
+                <table class="w-full text-xs sm:text-sm">
                     <thead>
                     <tr class="border-b border-zinc-200 text-left text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
                         <th class="sticky top-0 z-10 bg-white/95 px-2.5 py-2 font-medium backdrop-blur dark:bg-zinc-950/95">Created At</th>
