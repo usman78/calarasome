@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::view('admin/providers', 'admin.providers')->name('admin.providers');
     Route::view('admin/appointment-types', 'admin.appointment-types')->name('admin.appointment-types');
+    Route::view('admin/appointments', 'admin.appointments')->name('admin.appointments');
     Route::view('admin/patient-match-alerts', 'admin.patient-match-alerts')->name('admin.patient-match-alerts');
     Route::view('admin/patient-merge-audit', 'admin.patient-merge-audit')->name('admin.patient-merge-audit');
     Route::view('admin/payments', 'admin.payments')->name('admin.payments');

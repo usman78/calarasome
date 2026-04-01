@@ -22,6 +22,9 @@
                         <flux:sidebar.item icon="book-open-text" :href="route('admin.appointment-types')" :current="request()->routeIs('admin.appointment-types')" wire:navigate>
                             {{ __('Appointment Types') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="calendar-days" :href="route('admin.appointments')" :current="request()->routeIs('admin.appointments')" wire:navigate>
+                            {{ __('Appointments') }}
+                        </flux:sidebar.item>
                         <flux:sidebar.item icon="credit-card" :href="route('admin.payments')" :current="request()->routeIs('admin.payments')" wire:navigate>
                             {{ __('Payments') }}
                         </flux:sidebar.item>
