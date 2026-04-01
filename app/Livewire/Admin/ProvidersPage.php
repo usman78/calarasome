@@ -247,6 +247,8 @@ class ProvidersPage extends Component
             throw ValidationException::withMessages(['provider' => 'Select a provider first.']);
         }
 
+        $this->normalizeScheduleTimes();
+
         $this->validate([
             'schedules' => ['required', 'array', 'min:1'],
             'schedules.*.day_of_week' => ['required', 'integer', 'between:0,6'],
@@ -408,6 +410,24 @@ class ProvidersPage extends Component
             'effective_until' => null,
             'is_active' => true,
         ];
+    }
+
+    private function normalizeScheduleTimes(): void
+    {
+        foreach ($this->schedules as $index => $row) {
+            $start = $row['start_time'] ?? '';
+            $end = $row['end_time'] ?? '';
+
+            if (is_string($start) && strlen($start) >= 8) {
+                $start = substr($start, 0, 5);
+            }
+            if (is_string($end) && strlen($end) >= 8) {
+                $end = substr($end, 0, 5);
+            }
+
+            $this->schedules[$index]['start_time'] = $start;
+            $this->schedules[$index]['end_time'] = $end;
+        }
     }
 
     private function ensureNoScheduleOverlap(): void
