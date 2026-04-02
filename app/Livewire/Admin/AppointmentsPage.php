@@ -32,6 +32,9 @@ class AppointmentsPage extends Component
     public ?string $actionError = null;
     public ?string $actionMessage = null;
 
+    /** @var array<int, bool> */
+    public array $openDetails = [];
+
     public function mount(): void
     {
         $this->ensureAdmin();
@@ -119,6 +122,15 @@ class AppointmentsPage extends Component
         $this->loadAppointments();
     }
 
+    public function toggleDetails(int $appointmentId): void
+    {
+        if (isset($this->openDetails[$appointmentId])) {
+            unset($this->openDetails[$appointmentId]);
+        } else {
+            $this->openDetails[$appointmentId] = true;
+        }
+    }
+
     private function loadAppointments(): void
     {
         $query = Appointment::query()
@@ -128,6 +140,7 @@ class AppointmentsPage extends Component
                 'provider:id,full_name',
                 'appointmentType:id,name',
                 'payment:id,appointment_id,status,amount_cents,currency,strategy',
+                'insuranceVerification:id,appointment_id,status,urgency,insurance_data',
             ])
             ->orderBy('slot_datetime');
 
@@ -205,6 +218,10 @@ class AppointmentsPage extends Component
                     'provider' => $appointment->provider?->full_name ?? 'Provider',
                     'appointment_type' => $appointment->appointmentType?->name ?? 'Appointment',
                     'payment_status' => $appointment->payment?->status,
+                    'insurance_status' => $appointment->insuranceVerification?->status,
+                    'insurance_provider' => $appointment->insuranceVerification?->insurance_data['provider'] ?? null,
+                    'insurance_member_id' => $appointment->insuranceVerification?->insurance_data['member_id'] ?? null,
+                    'insurance_urgency' => $appointment->insuranceVerification?->urgency ?? null,
                     'can_cancel' => ! $isFinal,
                     'can_no_show' => $canNoShow,
                 ];
@@ -240,4 +257,3 @@ class AppointmentsPage extends Component
         abort_unless(auth()->user()?->is_admin, 403, 'Admin access required.');
     }
 }
-

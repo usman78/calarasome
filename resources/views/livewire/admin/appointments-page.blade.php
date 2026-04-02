@@ -94,6 +94,14 @@
                                 <td class="px-2.5 py-2 text-zinc-700 dark:text-zinc-200">
                                     <div class="font-medium">{{ $appointment['slot_local'] ?? 'TBD' }}</div>
                                     <div class="text-xs text-zinc-500">{{ $appointment['timezone'] }}</div>
+                                    <button
+                                        type="button"
+                                        class="mt-2 text-xs text-zinc-500 underline hover:text-zinc-800"
+                                        wire:click="toggleDetails({{ $appointment['id'] }})"
+                                        wire:loading.attr="disabled"
+                                    >
+                                        {{ ($openDetails[$appointment['id']] ?? false) ? 'Hide details' : 'View details' }}
+                                    </button>
                                 </td>
                                 <td class="px-2.5 py-2 text-zinc-700 dark:text-zinc-200">
                                     <div class="font-medium">{{ $appointment['patient'] }}</div>
@@ -135,6 +143,42 @@
                                     </div>
                                 </td>
                             </tr>
+                            @if ($openDetails[$appointment['id']] ?? false)
+                                <tr class="border-b border-zinc-100 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-900/40">
+                                    <td colspan="6" class="px-3 py-3 text-xs text-zinc-600 dark:text-zinc-300">
+                                        <div class="grid gap-3 md:grid-cols-3">
+                                            <div>
+                                                <div class="text-[11px] uppercase tracking-wide text-zinc-500">Clinic</div>
+                                                <div class="font-medium text-zinc-800 dark:text-zinc-100">{{ $appointment['clinic'] }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-[11px] uppercase tracking-wide text-zinc-500">Payment</div>
+                                                <div class="font-medium text-zinc-800 dark:text-zinc-100">{{ $appointment['payment_status'] ?? 'none' }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-[11px] uppercase tracking-wide text-zinc-500">Insurance</div>
+                                                <div class="font-medium text-zinc-800 dark:text-zinc-100">
+                                                    {{ $appointment['insurance_status'] ?? 'not required' }}
+                                                </div>
+                                            </div>
+                                            @if ($appointment['insurance_status'])
+                                                <div>
+                                                    <div class="text-[11px] uppercase tracking-wide text-zinc-500">Insurance Provider</div>
+                                                    <div class="font-medium text-zinc-800 dark:text-zinc-100">{{ $appointment['insurance_provider'] ?? 'N/A' }}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-[11px] uppercase tracking-wide text-zinc-500">Member ID</div>
+                                                    <div class="font-medium text-zinc-800 dark:text-zinc-100">{{ $appointment['insurance_member_id'] ?? 'N/A' }}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-[11px] uppercase tracking-wide text-zinc-500">Urgency</div>
+                                                    <div class="font-medium text-zinc-800 dark:text-zinc-100">{{ $appointment['insurance_urgency'] ?? 'standard' }}</div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endif
                         @endforeach
                         </tbody>
                     </table>
