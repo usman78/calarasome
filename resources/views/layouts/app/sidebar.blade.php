@@ -34,6 +34,9 @@
                         <flux:sidebar.item :href="route('admin.waitlist')" :current="request()->routeIs('admin.waitlist')" wire:navigate>
                             {{ __('Waitlist') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item :href="route('admin.waitlist-offers')" :current="request()->routeIs('admin.waitlist-offers')" wire:navigate>
+                            {{ __('Waitlist Offers') }}
+                        </flux:sidebar.item>
                         <flux:sidebar.item icon="exclamation-triangle" :href="route('admin.patient-match-alerts')" :current="request()->routeIs('admin.patient-match-alerts')" wire:navigate>
                             {{ __('Match Alerts') }}
                         </flux:sidebar.item>

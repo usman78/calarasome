@@ -47,18 +47,33 @@
                 @else
                     <div class="grid gap-3 sm:grid-cols-2">
                         @foreach ($entries[$tierKey] as $entry)
-                            <div class="rounded-lg border border-zinc-200 p-3 sm:p-4">
+                            <div wire:key="waitlist-entry-{{ $entry['id'] }}" class="rounded-lg border border-zinc-200 p-3 sm:p-4">
                                 <div class="flex items-center justify-between">
                                     <div class="font-semibold text-zinc-900">{{ $entry['patient'] }}</div>
                                     <span class="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
                                         Score {{ $entry['priority_score'] }}
                                     </span>
                                 </div>
+                                <div class="mt-1 text-[11px] text-zinc-500">Entry ID: {{ $entry['id'] }}</div>
                                 <div class="mt-2 text-xs text-zinc-500">{{ $entry['clinic'] }}</div>
                                 <div class="mt-1 text-sm text-zinc-700">{{ $entry['appointment_type'] }}</div>
+                                @if ($entry['email'] || $entry['phone'])
+                                    <div class="mt-2 text-xs text-zinc-500">
+                                        @if ($entry['email'])
+                                            <div>{{ $entry['email'] }}</div>
+                                        @endif
+                                        @if ($entry['phone'])
+                                            <div>{{ $entry['phone'] }}</div>
+                                        @endif
+                                    </div>
+                                @endif
 
                                 <div class="mt-3 flex flex-wrap gap-2 text-xs text-zinc-500">
                                     <span>Preferred: {{ $entry['preferred_datetime'] ?? 'None' }}</span>
+                                    <span>Window: {{ $entry['preferred_time_window'] }}</span>
+                                    @if ($entry['notes'])
+                                        <span>Notes: {{ $entry['notes'] }}</span>
+                                    @endif
                                     <span>Wait: {{ $entry['wait_days'] }} days</span>
                                     <span>No-shows: {{ $entry['no_show_count'] }}</span>
                                 </div>

@@ -59,7 +59,7 @@ class WaitlistPage extends Component
     private function loadEntries(WaitlistPriorityService $priorityService): void
     {
         $query = WaitlistEntry::query()
-            ->with(['clinic:id,name', 'patient:id,full_name,no_show_count', 'appointmentType:id,name'])
+            ->with(['clinic:id,name', 'patient:id,full_name,email,phone,no_show_count', 'appointmentType:id,name'])
             ->where('status', 'active')
             ->orderByDesc('created_at');
 
@@ -91,14 +91,27 @@ class WaitlistPage extends Component
 
         foreach ($entries as $entry) {
             $entry = $priorityService->refreshEntry($entry);
+            $triage = $entry->triage_data ?? [];
+            $window = $triage['preferred_time_window'] ?? null;
+            $windowLabel = match ($window) {
+                'morning' => 'Morning (9am-12pm)',
+                'midday' => 'Midday (12pm-3pm)',
+                'afternoon' => 'Afternoon (3pm-6pm)',
+                'evening' => 'Evening (6pm-9pm)',
+                default => 'Any time',
+            };
 
             $payload[$entry->tier][] = [
                 'id' => $entry->id,
                 'clinic' => $entry->clinic?->name ?? 'Clinic',
                 'patient' => $entry->patient?->full_name ?? 'Patient',
+                'email' => $entry->patient?->email,
+                'phone' => $entry->patient?->phone,
                 'appointment_type' => $entry->appointmentType?->name ?? 'Appointment',
                 'priority_score' => $entry->priority_score,
                 'preferred_datetime' => $entry->preferred_datetime?->format('Y-m-d H:i'),
+                'preferred_time_window' => $windowLabel,
+                'notes' => $triage['notes'] ?? null,
                 'no_show_count' => $entry->patient?->no_show_count ?? 0,
                 'created_at' => $entry->created_at?->format('Y-m-d H:i'),
                 'wait_days' => CarbonImmutable::parse($entry->created_at)->diffInDays(now()),

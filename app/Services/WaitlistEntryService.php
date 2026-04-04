@@ -7,8 +7,10 @@ use App\Models\Clinic;
 use App\Models\Patient;
 use App\Models\Provider;
 use App\Models\WaitlistEntry;
+use App\Mail\WaitlistJoinedEmail;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
+use Illuminate\Support\Facades\Mail;
 
 class WaitlistEntryService
 {
@@ -57,6 +59,36 @@ class WaitlistEntryService
             $preferredDatetime = $this->clinicDateTimeService->parseClinicLocalToUtc($clinic, $local);
         }
 
+        $existingEntry = WaitlistEntry::query()
+            ->where('clinic_id', $clinic->id)
+            ->where('patient_id', $patient->id)
+            ->where('appointment_type_id', $appointmentType->id)
+            ->where(function ($query) use ($providerId): void {
+                if ($providerId === null) {
+                    $query->whereNull('provider_id');
+                } else {
+                    $query->where('provider_id', $providerId);
+                }
+            })
+            ->where('status', 'active')
+            ->where(function ($query) use ($preferredDatetime): void {
+                if (! $preferredDatetime) {
+                    $query->whereNull('preferred_datetime');
+                } else {
+                    $query->whereDate('preferred_datetime', $preferredDatetime->toDateString());
+                }
+            })
+            ->first();
+
+        if ($existingEntry) {
+            $existingEntry->update([
+                'preferred_datetime' => $preferredDatetime,
+                'triage_data' => $payload['triage_data'] ?? [],
+            ]);
+
+            return $this->priorityService->refreshEntry($existingEntry);
+        }
+
         $entry = WaitlistEntry::query()->create([
             'clinic_id' => $clinic->id,
             'patient_id' => $patient->id,
@@ -68,6 +100,21 @@ class WaitlistEntryService
             'tier' => 'standard',
             'status' => 'active',
         ]);
+
+        $consent = $patient->communication_consent ?? [];
+        $hasConsent = (bool) ($consent['emailConsent'] ?? false);
+        $preferredWindow = $payload['triage_data']['preferred_time_window'] ?? null;
+
+        if ($patient->email && $hasConsent) {
+            Mail::to($patient->email)->send(
+                new WaitlistJoinedEmail(
+                    $clinic->name ?? 'Clinic',
+                    $appointmentType->name ?? 'Appointment',
+                    $preferredDate,
+                    $preferredWindow
+                )
+            );
+        }
 
         return $this->priorityService->refreshEntry($entry);
     }

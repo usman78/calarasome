@@ -254,9 +254,13 @@
                             <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ $slotEmptyReason }}</div>
                         @endif
                     </div>
-                    <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                        <flux:button class="w-full sm:w-auto" variant="primary" wire:click="enterWaitlistMode">Join Waitlist</flux:button>
-                    </div>
+                    @if ($canWaitlist)
+                        <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                            <flux:button class="w-full sm:w-auto" variant="primary" wire:click="enterWaitlistMode">Join Waitlist</flux:button>
+                        </div>
+                    @else
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Pick another date to view availability.</p>
+                    @endif
                 @else
                     <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         @foreach ($availableSlots as $slot)
@@ -418,9 +422,21 @@
                             @enderror
                         </div>
                         <div>
-                            <flux:input wire:model="preferredTime" label="Preferred Time" type="time" />
-                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optional. Leave blank for any time.</p>
-                            @error('preferredTime')
+                            <flux:select wire:model="preferredTimeWindow" label="Preferred Time Window" required>
+                                <flux:select.option value="any">Any time</flux:select.option>
+                                <flux:select.option value="morning">Morning (9am-12pm)</flux:select.option>
+                                <flux:select.option value="midday">Midday (12pm-3pm)</flux:select.option>
+                                <flux:select.option value="afternoon">Afternoon (3pm-6pm)</flux:select.option>
+                                <flux:select.option value="evening">Evening (6pm-9pm)</flux:select.option>
+                            </flux:select>
+                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Pick the window that fits best. You can mention more in notes.</p>
+                            @error('preferredTimeWindow')
+                                <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="md:col-span-2">
+                            <flux:input wire:model="waitlistNotes" label="Notes (optional)" type="text" placeholder="Add any extra details or flexibility." />
+                            @error('waitlistNotes')
                                 <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                             @enderror
                         </div>
@@ -450,14 +466,34 @@
                 <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <flux:button class="w-full sm:w-auto" variant="filled" wire:click="$set('step', 4)" wire:loading.attr="disabled" wire:target="completeBooking,submitWaitlist">Back</flux:button>
                     @if ($isWaitlistMode)
-                        <flux:button class="w-full sm:w-auto" :disabled="! $canSubmitWaitlist" variant="primary" wire:click="submitWaitlist" wire:loading.attr="disabled" wire:target="submitWaitlist">
-                            <span wire:loading.remove wire:target="submitWaitlist">Join Waitlist</span>
-                            <span wire:loading wire:target="submitWaitlist">Joining...</span>
+                        <flux:button
+                            class="w-full sm:w-auto"
+                            :disabled="! $canSubmitWaitlist"
+                            variant="primary"
+                            wire:click="submitWaitlist"
+                            wire:loading.attr="disabled"
+                            wire:target="submitWaitlist"
+                            x-data="{ busy: false }"
+                            x-on:click="busy = true"
+                            x-bind:disabled="busy || !@js($canSubmitWaitlist)"
+                        >
+                            <span x-show="!busy" wire:loading.remove wire:target="submitWaitlist">Join Waitlist</span>
+                            <span x-show="busy" wire:loading wire:target="submitWaitlist">Joining...</span>
                         </flux:button>
                     @else
-                        <flux:button class="w-full sm:w-auto" :disabled="! $canCompleteBooking" variant="primary" wire:click="completeBooking" wire:loading.attr="disabled" wire:target="completeBooking">
-                            <span wire:loading.remove wire:target="completeBooking">Complete Booking</span>
-                            <span wire:loading wire:target="completeBooking">Completing...</span>
+                        <flux:button
+                            class="w-full sm:w-auto"
+                            :disabled="! $canCompleteBooking"
+                            variant="primary"
+                            wire:click="completeBooking"
+                            wire:loading.attr="disabled"
+                            wire:target="completeBooking"
+                            x-data="{ busy: false }"
+                            x-on:click="busy = true"
+                            x-bind:disabled="busy || !@js($canCompleteBooking)"
+                        >
+                            <span x-show="!busy" wire:loading.remove wire:target="completeBooking">Complete Booking</span>
+                            <span x-show="busy" wire:loading wire:target="completeBooking">Completing...</span>
                         </flux:button>
                     @endif
                 </div>
@@ -479,8 +515,27 @@
                         <li><strong>Priority Tier:</strong> {{ $waitlistTier }}</li>
                         <li><strong>Priority Score:</strong> {{ $waitlistScore }}</li>
                         @if ($preferredDate)
-                            <li><strong>Preferred Date:</strong> {{ $preferredDate }} {{ $preferredTime ? $preferredTime : '' }}</li>
+                            <li><strong>Preferred Date:</strong> {{ $preferredDate }}</li>
                         @endif
+                        <li>
+                            <strong>Preferred Time Window:</strong>
+                            @switch($preferredTimeWindow)
+                                @case('morning')
+                                    Morning (9am-12pm)
+                                    @break
+                                @case('midday')
+                                    Midday (12pm-3pm)
+                                    @break
+                                @case('afternoon')
+                                    Afternoon (3pm-6pm)
+                                    @break
+                                @case('evening')
+                                    Evening (6pm-9pm)
+                                    @break
+                                @default
+                                    Any time
+                            @endswitch
+                        </li>
                     </ul>
                     <div class="flex flex-col gap-2 sm:flex-row">
                         <flux:button class="w-full sm:w-auto" variant="filled" href="{{ route('home') }}" wire:navigate>Back to Home</flux:button>
@@ -585,6 +640,12 @@
                             return;
                         }
 
+                        const submitButton = document.getElementById('payment-submit');
+                        if (submitButton) {
+                            submitButton.setAttribute('disabled', 'disabled');
+                            submitButton.textContent = 'Processing...';
+                        }
+
                         message.textContent = 'Processing payment...';
 
                         const response = strategy === 'setup_intent'
@@ -596,12 +657,15 @@
                             window.dispatchEvent(new CustomEvent('toast', {
                                 detail: { type: 'error', message: message.textContent }
                             }));
+                            if (submitButton) {
+                                submitButton.removeAttribute('disabled');
+                                submitButton.textContent = 'Confirm Payment';
+                            }
                         } else {
                             const intentStatus = response.paymentIntent?.status || response.setupIntent?.status || '';
                             if (['succeeded', 'requires_capture'].includes(intentStatus)) {
                                 message.textContent = 'Payment confirmed. Thank you.';
                                 form.dataset.completed = 'true';
-                                const submitButton = document.getElementById('payment-submit');
                                 if (submitButton) {
                                     submitButton.setAttribute('disabled', 'disabled');
                                     submitButton.textContent = 'Payment Confirmed';
@@ -614,6 +678,10 @@
                                 window.dispatchEvent(new CustomEvent('toast', {
                                     detail: { type: 'success', message: message.textContent }
                                 }));
+                                if (submitButton) {
+                                    submitButton.removeAttribute('disabled');
+                                    submitButton.textContent = 'Confirm Payment';
+                                }
                             }
                         }
                     });

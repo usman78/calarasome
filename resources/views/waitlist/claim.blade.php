@@ -63,9 +63,9 @@
                 @enderror
             </div>
 
-            <button type="submit" class="w-full rounded-lg bg-black px-4 py-2 text-sm font-medium text-white">
+            <flux:button variant="primary" class="w-full" type="submit">
                 Confirm Appointment
-            </button>
+            </flux:button>
         </form>
     @endif
 </x-layouts::auth>

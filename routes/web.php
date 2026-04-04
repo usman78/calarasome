@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::view('admin/patient-merge-audit', 'admin.patient-merge-audit')->name('admin.patient-merge-audit');
     Route::view('admin/payments', 'admin.payments')->name('admin.payments');
     Route::view('admin/waitlist', 'admin.waitlist')->name('admin.waitlist');
+    Route::view('admin/waitlist-offers', 'admin.waitlist-offers')->name('admin.waitlist-offers');
     Route::view('admin/insurance-verifications', 'admin.insurance-verifications')->name('admin.insurance-verifications');
 });
 

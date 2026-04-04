@@ -133,7 +133,7 @@
                         x-text="message"
                     ></div>
                 </template>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-3">
                     <div>
                         <div class="text-sm font-medium text-zinc-900">Need to cancel?</div>
                         <div class="text-xs text-zinc-500">Cancels this appointment and applies the clinic policy.</div>
@@ -176,9 +176,9 @@
                 @enderror
             </div>
 
-            <button type="submit" class="w-full rounded-lg bg-black px-4 py-2 text-sm font-medium text-white">
+            <flux:button variant="primary" class="w-full" type="submit">
                 Verify
-            </button>
+            </flux:button>
         </form>
     @endif
 </x-layouts::auth>

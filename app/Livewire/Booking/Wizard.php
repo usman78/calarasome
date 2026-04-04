@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\AppointmentType;
 use App\Models\Clinic;
 use App\Models\Provider;
+use App\Models\ProviderSchedule;
 use App\Models\SlotReservation;
 use App\Services\AppointmentCommunicationService;
 use App\Services\AppointmentPaymentService;
@@ -64,11 +65,13 @@ class Wizard extends Component
     public string $insuranceUrgency = 'standard';
     public bool $isWaitlistMode = false;
     public ?string $preferredDate = null;
-    public ?string $preferredTime = null;
+    public string $preferredTimeWindow = 'any';
+    public string $waitlistNotes = '';
     public ?int $waitlistEntryId = null;
     public ?string $waitlistTier = null;
     public ?int $waitlistScore = null;
     public ?string $slotEmptyReason = null;
+    public bool $canWaitlist = false;
 
     public ?int $appointmentId = null;
     public ?string $confirmedSlotLocal = null;
@@ -111,6 +114,7 @@ class Wizard extends Component
         $this->slotLocalDatetime = null;
         $this->sessionToken = null;
         $this->slotEmptyReason = null;
+        $this->canWaitlist = false;
         $this->isWaitlistMode = false;
         $this->requiresInsurance = (bool) (collect($this->appointmentTypes)->firstWhere('id', $appointmentTypeId)['is_medical'] ?? false);
         if (! $this->requiresInsurance) {
@@ -133,6 +137,7 @@ class Wizard extends Component
         $this->slotLocalDatetime = null;
         $this->sessionToken = null;
         $this->slotEmptyReason = null;
+        $this->canWaitlist = false;
         $this->isWaitlistMode = false;
         $this->loadSlots();
         $this->step = 4;
@@ -142,6 +147,7 @@ class Wizard extends Component
     {
         if ($this->step >= 4 && $this->providerSelection !== null) {
             $this->slotEmptyReason = null;
+            $this->canWaitlist = false;
             $this->loadSlots();
         }
     }
@@ -326,7 +332,8 @@ class Wizard extends Component
         $this->assignedProviderName = null;
         $this->slotEmptyReason = null;
         $this->preferredDate = $this->selectedDate ?: now($this->clinic->timezone)->format('Y-m-d');
-        $this->preferredTime = null;
+        $this->preferredTimeWindow = 'any';
+        $this->waitlistNotes = '';
         $this->step = 5;
     }
 
@@ -339,7 +346,8 @@ class Wizard extends Component
             'dateOfBirth' => ['required', 'date'],
             'emailConsent' => ['accepted'],
             'preferredDate' => ['nullable', 'date'],
-            'preferredTime' => ['nullable', 'date_format:H:i'],
+            'preferredTimeWindow' => ['required', 'in:any,morning,midday,afternoon,evening'],
+            'waitlistNotes' => ['nullable', 'string', 'max:500'],
         ]);
 
         if (! $this->appointmentTypeId) {
@@ -360,9 +368,10 @@ class Wizard extends Component
             'date_of_birth' => $this->dateOfBirth,
             'email_phi' => $this->emailPhi,
             'preferred_date' => $this->preferredDate,
-            'preferred_time' => $this->preferredTime,
             'triage_data' => [
                 'urgency_flag' => false,
+                'preferred_time_window' => $this->preferredTimeWindow,
+                'notes' => $this->waitlistNotes ?: null,
             ],
         ]);
 
@@ -416,6 +425,7 @@ class Wizard extends Component
     {
         $this->availableSlots = [];
         $this->slotEmptyReason = null;
+        $this->canWaitlist = false;
 
         if (! $this->appointmentTypeId || ! $this->providerSelection) {
             return;
@@ -429,17 +439,40 @@ class Wizard extends Component
             return;
         }
 
-        $forDateUtc = CarbonImmutable::parse($this->selectedDate.' 00:00:00', $this->clinic->timezone)->utc();
+        $localDate = CarbonImmutable::parse($this->selectedDate.' 00:00:00', $this->clinic->timezone);
+        $forDateUtc = $localDate->utc();
+        $dayOfWeek = (int) $localDate->dayOfWeek;
         $slotService = app(SlotAvailabilityService::class);
 
         if ($this->providerSelection === 'any') {
             $providerIds = collect($this->providers)->pluck('id')->all();
             if ($providerIds === []) {
-                $this->slotEmptyReason = 'No providers are mapped to this treatment yet. Add a provider in Admin → Appointment Types.';
+                $this->slotEmptyReason = 'No providers are mapped to this treatment yet. Add a provider in Admin -> Appointment Types.';
 
                 return;
             }
             $providers = Provider::query()->whereIn('id', $providerIds)->get();
+            $hasSchedule = ProviderSchedule::query()
+                ->whereIn('provider_id', $providerIds)
+                ->where('is_active', true)
+                ->where('day_of_week', $dayOfWeek)
+                ->get()
+                ->filter(function (ProviderSchedule $schedule) use ($appointmentType, $localDate): bool {
+                    if ($schedule->effective_from && $localDate->toDateString() < $schedule->effective_from->toDateString()) {
+                        return false;
+                    }
+
+                    if ($schedule->effective_until && $localDate->toDateString() > $schedule->effective_until->toDateString()) {
+                        return false;
+                    }
+
+                    if ($schedule->appointment_type_ids === null) {
+                        return true;
+                    }
+
+                    return in_array($appointmentType->id, $schedule->appointment_type_ids, true);
+                })
+                ->isNotEmpty();
 
             $merged = [];
             foreach ($providers as $provider) {
@@ -460,7 +493,13 @@ class Wizard extends Component
             $this->availableSlots = array_values($merged);
 
             if ($this->availableSlots === []) {
-                $this->slotEmptyReason = 'No availability for the selected date. Check provider schedules or pick another day.';
+                if (! $hasSchedule) {
+                    $this->slotEmptyReason = 'No providers are scheduled for this treatment on the selected date. Pick another day.';
+                    $this->canWaitlist = false;
+                } else {
+                    $this->slotEmptyReason = 'Fully booked for the selected date. Join the waitlist and share your preferred time window.';
+                    $this->canWaitlist = true;
+                }
             }
 
             return;
@@ -481,7 +520,35 @@ class Wizard extends Component
             ->all();
 
         if ($this->availableSlots === []) {
-            $this->slotEmptyReason = 'No availability for the selected date. Check provider schedules or pick another day.';
+            $hasSchedule = ProviderSchedule::query()
+                ->where('provider_id', $provider->id)
+                ->where('is_active', true)
+                ->where('day_of_week', $dayOfWeek)
+                ->get()
+                ->filter(function (ProviderSchedule $schedule) use ($appointmentType, $localDate): bool {
+                    if ($schedule->effective_from && $localDate->toDateString() < $schedule->effective_from->toDateString()) {
+                        return false;
+                    }
+
+                    if ($schedule->effective_until && $localDate->toDateString() > $schedule->effective_until->toDateString()) {
+                        return false;
+                    }
+
+                    if ($schedule->appointment_type_ids === null) {
+                        return true;
+                    }
+
+                    return in_array($appointmentType->id, $schedule->appointment_type_ids, true);
+                })
+                ->isNotEmpty();
+
+            if (! $hasSchedule) {
+                $this->slotEmptyReason = 'This provider is not scheduled on the selected date. Pick another day.';
+                $this->canWaitlist = false;
+            } else {
+                $this->slotEmptyReason = 'Fully booked for the selected date. Join the waitlist and share your preferred time window.';
+                $this->canWaitlist = true;
+            }
         }
     }
 

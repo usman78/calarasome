@@ -54,10 +54,28 @@ class WaitlistNotificationService
             return null;
         }
 
+        $appointmentType = AppointmentType::query()->find($appointment->appointment_type_id);
+        if (! $appointmentType) {
+            return null;
+        }
+
+        $slotDuration = (int) $appointmentType->duration_minutes;
+        $slotDate = $appointment->slot_datetime->toDateString();
+
         $hasEntries = WaitlistEntry::query()
             ->where('clinic_id', $appointment->clinic_id)
-            ->where('appointment_type_id', $appointment->appointment_type_id)
             ->where('status', 'active')
+            ->whereHas('appointmentType', function (Builder $query) use ($slotDuration): void {
+                $query->where('duration_minutes', '<=', $slotDuration);
+            })
+            ->when($appointment->provider_id, function (Builder $query) use ($appointment): void {
+                $query->where(function (Builder $providerQuery) use ($appointment): void {
+                    $providerQuery->whereNull('provider_id')->orWhere('provider_id', $appointment->provider_id);
+                });
+            })
+            ->where(function (Builder $query) use ($slotDate): void {
+                $query->whereNull('preferred_datetime')->orWhereDate('preferred_datetime', $slotDate);
+            })
             ->exists();
 
         if (! $hasEntries) {
