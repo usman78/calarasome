@@ -27,8 +27,14 @@ class PatientMergeService
 
         return DB::transaction(function () use ($source, $target, $mergedByUserId): Patient {
             $payload = [
-                'source' => $source->only(['full_name', 'email', 'phone', 'date_of_birth', 'is_shared_email_account']),
-                'target' => $target->only(['full_name', 'email', 'phone', 'date_of_birth', 'is_shared_email_account']),
+                'source' => array_merge(
+                    ['id' => $source->id],
+                    $source->only(['full_name', 'email', 'phone', 'date_of_birth', 'is_shared_email_account'])
+                ),
+                'target' => array_merge(
+                    ['id' => $target->id],
+                    $target->only(['full_name', 'email', 'phone', 'date_of_birth', 'is_shared_email_account'])
+                ),
             ];
 
             Appointment::query()->where('patient_id', $source->id)->update(['patient_id' => $target->id]);

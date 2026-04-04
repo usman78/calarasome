@@ -13,45 +13,40 @@ class PatientMatchingService
     {
         $email = Str::lower(trim($data['email']));
         $name = $this->normalizeName($data['full_name']);
-        $dob = $data['date_of_birth'];
+        $dob = $this->normalizeDob($data['date_of_birth'] ?? null);
         $phone = $data['phone'] ?? null;
 
         // Step 1: strict primary key match (email + DOB).
         $emailDobMatch = $this->findByEmailAndDob($clinicId, $email, $dob);
         if ($emailDobMatch) {
-            return tap($emailDobMatch, fn (Patient $p) => $this->refreshContact($p, $data));
+            return tap($emailDobMatch, fn (Patient $p) => $this->refreshContact($p, $data, 'email_dob'));
         }
 
         // Step 2: fallback by phone + DOB (email can change over time).
         $phoneDobMatch = $this->findByPhoneAndDob($clinicId, $phone, $dob);
         if ($phoneDobMatch) {
-            return tap($phoneDobMatch, fn (Patient $p) => $this->refreshContact($p, $data));
+            return tap($phoneDobMatch, fn (Patient $p) => $this->refreshContact($p, $data, 'phone_dob'));
         }
 
-        // Step 3: fallback by unique normalized-name + DOB.
-        $nameDobMatch = $this->findUniqueByNameAndDob($clinicId, $name, $dob);
-        if ($nameDobMatch) {
-            return tap($nameDobMatch, fn (Patient $p) => $this->refreshContact($p, $data));
-        }
-
-        // Step 4: legacy compatibility, same email + same normalized name + missing DOB.
+        // Step 3: legacy compatibility, same email + same normalized name + missing DOB.
         $legacyEmailNameMissingDob = $this->findLegacyEmailNameMissingDob($clinicId, $email, $name);
         if ($legacyEmailNameMissingDob) {
-            return tap($legacyEmailNameMissingDob, fn (Patient $p) => $this->refreshContact($p, $data));
+            return tap($legacyEmailNameMissingDob, fn (Patient $p) => $this->refreshContact($p, $data, 'legacy_email_name_missing_dob'));
         }
 
-        // Step 5: create new patient; if email exists with different DOB, flag + alert.
+        // Step 4: create new patient; if email exists with different DOB, flag + alert.
         return $this->createPatientWithSharedEmailCheck($clinicId, $data, $email, $dob);
     }
 
-    private function refreshContact(Patient $patient, array $data): void
+    private function refreshContact(Patient $patient, array $data, ?string $matchedBy = null): void
     {
         $patient->update([
             'full_name' => $data['full_name'] ?? $patient->full_name,
             'email' => Str::lower(trim($data['email'] ?? $patient->email)),
             'phone' => $data['phone'] ?? $patient->phone,
-            'date_of_birth' => $data['date_of_birth'] ?? $patient->date_of_birth,
+            'date_of_birth' => $this->normalizeDob($data['date_of_birth'] ?? null) ?: $patient->date_of_birth,
             'communication_consent' => $data['communication_consent'] ?? $patient->communication_consent,
+            'last_matched_by' => $matchedBy ?? $patient->last_matched_by,
         ]);
     }
 
@@ -77,18 +72,6 @@ class PatientMatchingService
             ->first();
     }
 
-    private function findUniqueByNameAndDob(int $clinicId, string $normalizedName, string $dob): ?Patient
-    {
-        $candidates = Patient::query()
-            ->where('clinic_id', $clinicId)
-            ->whereDate('date_of_birth', $dob)
-            ->get()
-            ->filter(fn (Patient $candidate): bool => $this->normalizeName($candidate->full_name) === $normalizedName)
-            ->values();
-
-        return $candidates->count() === 1 ? $candidates->first() : null;
-    }
-
     private function findLegacyEmailNameMissingDob(int $clinicId, string $email, string $normalizedName): ?Patient
     {
         return Patient::query()
@@ -108,18 +91,25 @@ class PatientMatchingService
             ->whereRaw('LOWER(email) = ?', [$email])
             ->get();
 
+        $differentDobMatches = $emailMatches->filter(function (Patient $match) use ($dob): bool {
+            $existingDob = $match->date_of_birth?->format('Y-m-d');
+
+            return $existingDob !== $dob;
+        });
+
         $patient = Patient::query()->create([
             'clinic_id' => $clinicId,
             'full_name' => $data['full_name'],
             'email' => $email,
             'phone' => $data['phone'] ?? null,
             'date_of_birth' => $dob,
-            'is_shared_email_account' => $emailMatches->isNotEmpty(),
+            'is_shared_email_account' => $differentDobMatches->isNotEmpty(),
+            'last_matched_by' => $differentDobMatches->isNotEmpty() ? 'shared_email_new' : 'created',
             'communication_consent' => $data['communication_consent'] ?? null,
         ]);
 
-        if ($emailMatches->isNotEmpty()) {
-            $this->recordSharedEmailMismatchAlert($clinicId, $patient, $emailMatches, $dob);
+        if ($differentDobMatches->isNotEmpty()) {
+            $this->recordSharedEmailMismatchAlert($clinicId, $patient, $differentDobMatches, $dob);
         }
 
         return $patient;
@@ -147,5 +137,18 @@ class PatientMatchingService
         $normalized = preg_replace('/[^a-z0-9\s]/', '', $normalized) ?? $normalized;
 
         return trim(preg_replace('/\s+/', ' ', $normalized) ?? $normalized);
+    }
+
+    private function normalizeDob(?string $dob): string
+    {
+        if (! $dob) {
+            return '';
+        }
+
+        try {
+            return \Carbon\CarbonImmutable::parse($dob)->format('Y-m-d');
+        } catch (\Throwable) {
+            return $dob;
+        }
     }
 }

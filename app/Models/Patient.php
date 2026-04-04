@@ -18,6 +18,7 @@ class Patient extends Model
         'phone',
         'date_of_birth',
         'is_shared_email_account',
+        'last_matched_by',
         'communication_consent',
         'no_show_count',
     ];

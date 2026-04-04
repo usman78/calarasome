@@ -48,6 +48,7 @@
                         <th class="sticky top-0 z-10 bg-white/95 px-2.5 py-2 font-medium backdrop-blur dark:bg-zinc-950/95">Patient</th>
                         <th class="sticky top-0 z-10 bg-white/95 px-2.5 py-2 font-medium backdrop-blur dark:bg-zinc-950/95">Email</th>
                         <th class="sticky top-0 z-10 bg-white/95 px-2.5 py-2 font-medium backdrop-blur dark:bg-zinc-950/95">Type</th>
+                        <th class="sticky top-0 z-10 bg-white/95 px-2.5 py-2 font-medium backdrop-blur dark:bg-zinc-950/95">Matched By</th>
                         <th class="sticky top-0 z-10 bg-white/95 px-2.5 py-2 font-medium backdrop-blur dark:bg-zinc-950/95">Existing IDs</th>
                         <th class="sticky top-0 z-10 bg-white/95 px-2.5 py-2 font-medium backdrop-blur dark:bg-zinc-950/95">Merge</th>
                         <th class="sticky top-0 z-10 bg-white/95 px-2.5 py-2 font-medium backdrop-blur dark:bg-zinc-950/95">Status</th>
@@ -65,11 +66,37 @@
                             </td>
                             <td class="px-2.5 py-2 text-zinc-700 dark:text-zinc-200">{{ $alert['email'] ?: 'n/a' }}</td>
                             <td class="px-2.5 py-2 text-zinc-700 dark:text-zinc-200">{{ $alert['alert_type'] }}</td>
+                            <td class="px-2.5 py-2 text-xs text-zinc-600 dark:text-zinc-300">
+                                @if ($alert['matched_by'])
+                                    <span class="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                                        {{ $alert['matched_by'] }}
+                                    </span>
+                                @else
+                                    <span class="text-zinc-400">n/a</span>
+                                @endif
+                            </td>
                             <td class="px-2.5 py-2 text-zinc-700 dark:text-zinc-200">
                                 @if ($alert['existing_patient_ids'] === [])
                                     <span class="text-zinc-500">none</span>
                                 @else
-                                    {{ implode(', ', $alert['existing_patient_ids']) }}
+                                    <div class="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
+                                        @foreach ($alert['existing_patients'] as $patient)
+                                            <div>
+                                                <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $patient['name'] }}</span>
+                                                <span class="text-zinc-500">({{ $patient['dob'] ?? 'DOB n/a' }})</span>
+                                                <span class="text-zinc-500">ID {{ $patient['id'] }}</span>
+                                                @if (! empty($patient['email']))
+                                                    <div class="text-[11px] text-zinc-500">{{ $patient['email'] }}</div>
+                                                @endif
+                                                @if (! empty($patient['phone']))
+                                                    <div class="text-[11px] text-zinc-500">{{ $patient['phone'] }}</div>
+                                                @endif
+                                                @if (! empty($patient['created_at']))
+                                                    <div class="text-[11px] text-zinc-400">Created {{ $patient['created_at'] }}</div>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
                                 @endif
                             </td>
                             <td class="px-2.5 py-2">
@@ -80,10 +107,25 @@
                                             <option value="">Select target</option>
                                             @foreach ($alert['existing_patients'] as $patient)
                                                 <option value="{{ $patient['id'] }}">
-                                                    {{ $patient['name'] }} ({{ $patient['dob'] ?? 'n/a' }})
+                                                    {{ $patient['name'] }} ({{ $patient['dob'] ?? 'n/a' }}) • {{ $patient['email'] ?? 'no email' }} • {{ $patient['phone'] ?? 'no phone' }} • ID {{ $patient['id'] }}
                                                 </option>
                                             @endforeach
                                         </select>
+                                        @php
+                                            $selectedPatient = collect($alert['existing_patients'])->firstWhere('id', $mergeTargetId);
+                                        @endphp
+                                        @if ($selectedPatient)
+                                            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs text-emerald-900 shadow-xs dark:border-emerald-800/60 dark:bg-emerald-900/20 dark:text-emerald-100">
+                                                <div class="text-[11px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Selected target</div>
+                                                <div class="mt-1 font-semibold">{{ $selectedPatient['name'] }} (ID {{ $selectedPatient['id'] }})</div>
+                                                <div class="text-[11px] text-emerald-800 dark:text-emerald-200">DOB {{ $selectedPatient['dob'] ?? 'n/a' }}</div>
+                                                <div class="text-[11px] text-emerald-800 dark:text-emerald-200">{{ $selectedPatient['email'] ?? 'no email' }}</div>
+                                                <div class="text-[11px] text-emerald-800 dark:text-emerald-200">{{ $selectedPatient['phone'] ?? 'no phone' }}</div>
+                                                @if (! empty($selectedPatient['created_at']))
+                                                    <div class="text-[11px] text-emerald-700 dark:text-emerald-300">Created {{ $selectedPatient['created_at'] }}</div>
+                                                @endif
+                                            </div>
+                                        @endif
                                         <button
                                             type="button"
                                             class="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"

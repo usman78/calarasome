@@ -101,7 +101,7 @@ class PatientMatchAlertsPage extends Component
     private function loadAlerts(): void
     {
         $query = PatientMatchAlert::query()
-            ->with(['clinic:id,name', 'patient:id,full_name,date_of_birth,email'])
+            ->with(['clinic:id,name', 'patient:id,full_name,date_of_birth,email,phone,last_matched_by'])
             ->orderByDesc('created_at');
 
         if ($this->clinicFilter !== 'all') {
@@ -130,20 +130,25 @@ class PatientMatchAlertsPage extends Component
 
                 return [
                     'id' => $alert->id,
+                    'patient_id' => $alert->patient_id,
                     'created_at' => $alert->created_at?->format('Y-m-d H:i:s'),
                     'clinic_name' => $alert->clinic?->name ?? 'Unknown clinic',
                     'patient_name' => $alert->patient?->full_name ?? 'Unknown patient',
                     'patient_dob' => $alert->patient?->date_of_birth?->format('Y-m-d'),
                     'email' => $alert->payload['email'] ?? $alert->patient?->email,
+                    'matched_by' => $alert->patient?->last_matched_by,
                     'alert_type' => $alert->alert_type,
                     'existing_patient_ids' => $existingIds,
                     'existing_patients' => Patient::query()
                         ->whereIn('id', $existingIds)
-                        ->get(['id', 'full_name', 'date_of_birth'])
+                        ->get(['id', 'full_name', 'date_of_birth', 'email', 'phone', 'created_at'])
                         ->map(fn (Patient $patient): array => [
                             'id' => $patient->id,
                             'name' => $patient->full_name,
                             'dob' => $patient->date_of_birth?->format('Y-m-d'),
+                            'email' => $patient->email,
+                            'phone' => $patient->phone,
+                            'created_at' => $patient->created_at?->format('Y-m-d'),
                         ])->all(),
                     'resolved_at' => $alert->resolved_at?->format('Y-m-d H:i:s'),
                 ];
