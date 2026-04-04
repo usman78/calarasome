@@ -86,16 +86,20 @@ class PatientMergeAuditPage extends Component
                     'created_at' => $log->created_at?->format('Y-m-d H:i:s'),
                     'clinic' => $log->clinic?->name ?? 'Clinic',
                     'source' => [
-                        'id' => $log->sourcePatient?->id,
-                        'name' => $log->sourcePatient?->full_name ?? 'Unknown',
-                        'dob' => $log->sourcePatient?->date_of_birth?->format('Y-m-d'),
-                        'email' => $log->sourcePatient?->email,
+                        'id' => $log->sourcePatient?->id ?? ($log->payload['source']['id'] ?? null),
+                        'name' => $log->sourcePatient?->full_name ?? ($log->payload['source']['full_name'] ?? 'Unknown'),
+                        'dob' => $this->formatDob(
+                            $log->sourcePatient?->date_of_birth ?? ($log->payload['source']['date_of_birth'] ?? null)
+                        ),
+                        'email' => $log->sourcePatient?->email ?? ($log->payload['source']['email'] ?? null),
                     ],
                     'target' => [
-                        'id' => $log->targetPatient?->id,
-                        'name' => $log->targetPatient?->full_name ?? 'Unknown',
-                        'dob' => $log->targetPatient?->date_of_birth?->format('Y-m-d'),
-                        'email' => $log->targetPatient?->email,
+                        'id' => $log->targetPatient?->id ?? ($log->payload['target']['id'] ?? null),
+                        'name' => $log->targetPatient?->full_name ?? ($log->payload['target']['full_name'] ?? 'Unknown'),
+                        'dob' => $this->formatDob(
+                            $log->targetPatient?->date_of_birth ?? ($log->payload['target']['date_of_birth'] ?? null)
+                        ),
+                        'email' => $log->targetPatient?->email ?? ($log->payload['target']['email'] ?? null),
                     ],
                     'merged_by' => $log->mergedBy?->name ?? 'Admin',
                 ];
@@ -114,5 +118,22 @@ class PatientMergeAuditPage extends Component
     private function ensureAdmin(): void
     {
         abort_unless(auth()->user()?->is_admin, 403, 'Admin access required.');
+    }
+
+    private function formatDob(mixed $value): ?string
+    {
+        if ($value instanceof \Carbon\CarbonInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_string($value) && $value !== '') {
+            try {
+                return \Carbon\CarbonImmutable::parse($value)->format('Y-m-d');
+            } catch (\Throwable) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }

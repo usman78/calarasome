@@ -35,7 +35,7 @@
                             <div class="text-sm font-semibold text-zinc-900 dark:text-white">Merged by {{ $merge['merged_by'] }}</div>
                             <div class="text-xs text-zinc-500">{{ $merge['created_at'] }}</div>
                         </div>
-                        <div class="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 sm:self-start">
+                        <div class="flex items-center justify-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 sm:self-start">
                             Merge ID {{ $merge['id'] }}
                         </div>
                     </div>
