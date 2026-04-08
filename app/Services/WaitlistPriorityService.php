@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\Clinic;
 use App\Models\WaitlistEntry;
+use App\Mail\WaitlistReengagementEmail;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Mail;
 
 class WaitlistPriorityService
 {
@@ -68,5 +71,45 @@ class WaitlistPriorityService
         ]);
 
         return $entry->fresh();
+    }
+
+    public function archiveStaleEntries(int $days): int
+    {
+        $cutoff = now()->subDays($days);
+
+        $entries = WaitlistEntry::query()
+            ->with(['patient', 'clinic', 'appointmentType'])
+            ->where('status', 'active')
+            ->whereDate('created_at', '<=', $cutoff->toDateString())
+            ->get();
+
+        $archivedCount = 0;
+
+        foreach ($entries as $entry) {
+            $entry->update([
+                'status' => 'archived',
+                'archived_at' => now(),
+            ]);
+
+            $archivedCount++;
+
+            $patient = $entry->patient;
+            $clinic = $entry->clinic;
+            $appointmentType = $entry->appointmentType;
+            $consent = $patient?->communication_consent ?? [];
+            $hasConsent = (bool) ($consent['emailConsent'] ?? false);
+
+            if ($patient?->email && $hasConsent && $clinic) {
+                Mail::to($patient->email)->send(
+                    new WaitlistReengagementEmail(
+                        $clinic->name ?? 'Clinic',
+                        $appointmentType?->name ?? 'Appointment',
+                        $clinic->slug
+                    )
+                );
+            }
+        }
+
+        return $archivedCount;
     }
 }

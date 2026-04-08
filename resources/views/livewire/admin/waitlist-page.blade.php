@@ -9,6 +9,13 @@
                 <div class="w-full md:w-56">
                     <flux:input wire:model.live="search" label="Search" type="text" placeholder="Patient, clinic, type..." />
                 </div>
+                <div class="w-full md:w-48">
+                    <flux:select wire:model.live="statusFilter" label="Status">
+                        <flux:select.option value="active">Active</flux:select.option>
+                        <flux:select.option value="archived">Archived</flux:select.option>
+                        <flux:select.option value="all">All</flux:select.option>
+                    </flux:select>
+                </div>
                 <div class="w-full md:w-56">
                     <flux:select wire:model.live="clinicFilter" label="Clinic">
                         <flux:select.option value="all">All clinics</flux:select.option>
@@ -50,9 +57,16 @@
                             <div wire:key="waitlist-entry-{{ $entry['id'] }}" class="rounded-lg border border-zinc-200 p-3 sm:p-4">
                                 <div class="flex items-center justify-between">
                                     <div class="font-semibold text-zinc-900">{{ $entry['patient'] }}</div>
-                                    <span class="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
-                                        Score {{ $entry['priority_score'] }}
-                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        @if (($entry['status'] ?? 'active') === 'archived')
+                                            <span class="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-600">
+                                                Archived {{ $entry['archived_at'] ?? '' }}
+                                            </span>
+                                        @endif
+                                        <span class="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
+                                            Score {{ $entry['priority_score_display'] }}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div class="mt-1 text-[11px] text-zinc-500">Entry ID: {{ $entry['id'] }}</div>
                                 <div class="mt-2 text-xs text-zinc-500">{{ $entry['clinic'] }}</div>

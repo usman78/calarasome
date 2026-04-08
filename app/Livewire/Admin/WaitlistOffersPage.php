@@ -4,10 +4,12 @@ namespace App\Livewire\Admin;
 
 use App\Mail\WaitlistSlotAvailableEmail;
 use App\Models\Clinic;
+use App\Models\Appointment;
 use App\Models\ProviderSchedule;
 use App\Models\WaitlistEntry;
 use App\Models\WaitlistNotification;
 use App\Models\WaitlistNotificationRecipient;
+use App\Services\SlotAvailabilityService;
 use Carbon\CarbonImmutable;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -74,11 +76,19 @@ class WaitlistOffersPage extends Component
         $this->ensureAdmin();
 
         $notification = WaitlistNotification::query()
-            ->with(['clinic', 'appointmentType', 'provider'])
+            ->with(['clinic', 'appointmentType', 'provider', 'claimedAppointment'])
             ->findOrFail($notificationId);
 
         if ($notification->status !== 'pending') {
             $this->dispatch('toast', type: 'error', message: 'This slot is no longer pending.');
+
+            return;
+        }
+
+        if (! $this->slotStillAvailable($notification)) {
+            $notification->update(['status' => 'expired']);
+            $this->dispatch('toast', type: 'error', message: 'This slot is no longer available.');
+            $this->loadNotifications();
 
             return;
         }
@@ -150,7 +160,9 @@ class WaitlistOffersPage extends Component
                     ? CarbonImmutable::parse($notification->slot_datetime)->setTimezone($timezone)->format('Y-m-d H:i')
                     : null;
 
-                $eligible = $this->eligibleEntries($notification);
+                $eligible = $notification->status === 'pending'
+                    ? $this->eligibleEntries($notification)
+                    : collect();
 
                 return [
                     'id' => $notification->id,
@@ -162,6 +174,8 @@ class WaitlistOffersPage extends Component
                     'appointment_type' => $notification->appointmentType?->name ?? 'Appointment',
                     'slot_duration' => $notification->appointmentType?->duration_minutes ?? null,
                     'eligible_entries' => $eligible,
+                    'claimed_by_entry_id' => $notification->claimed_by_waitlist_entry_id,
+                    'claimed_appointment_id' => $notification->claimed_appointment_id,
                 ];
             });
     }
@@ -281,6 +295,7 @@ class WaitlistOffersPage extends Component
             'appointment_type' => $entry->appointmentType?->name ?? 'Appointment',
             'duration' => $entry->appointmentType?->duration_minutes,
             'priority_score' => $entry->priority_score,
+            'priority_score_display' => number_format((float) $entry->priority_score, 1),
             'preferred_time_window' => $windowLabel,
             'preferred_date' => $preferredDate,
             'date_match' => $dateMatch,
@@ -302,6 +317,32 @@ class WaitlistOffersPage extends Component
         }
 
         return in_array($appointmentTypeId, $schedule->appointment_type_ids, true);
+    }
+
+    private function slotStillAvailable(WaitlistNotification $notification): bool
+    {
+        $clinic = $notification->clinic;
+        $provider = $notification->provider;
+        $appointmentType = $notification->appointmentType;
+
+        if (! $clinic || ! $provider || ! $appointmentType || ! $notification->slot_datetime) {
+            return false;
+        }
+
+        $slotUtc = CarbonImmutable::parse($notification->slot_datetime)->utc();
+        $slotConflict = \App\Models\Appointment::query()
+            ->where('clinic_id', $clinic->id)
+            ->where('provider_id', $provider->id)
+            ->where('slot_datetime', $notification->slot_datetime)
+            ->whereNotIn('status', ['canceled', 'no_show'])
+            ->exists();
+
+        if ($slotConflict) {
+            return false;
+        }
+
+        return app(SlotAvailabilityService::class)
+            ->isSlotAvailable($clinic, $provider, $appointmentType, $slotUtc);
     }
 
     public function render()

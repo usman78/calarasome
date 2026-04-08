@@ -658,7 +658,7 @@
 
                         if (response.error) {
                             message.textContent = response.error.message || 'Payment failed. Please try again.';
-                            window.dispatchEvent(new CustomEvent('toast', {
+                            document.dispatchEvent(new CustomEvent('toast', {
                                 detail: { type: 'error', message: message.textContent }
                             }));
                             if (submitButton) {
@@ -674,12 +674,12 @@
                                     submitButton.setAttribute('disabled', 'disabled');
                                     submitButton.textContent = 'Payment Confirmed';
                                 }
-                                window.dispatchEvent(new CustomEvent('toast', {
+                                document.dispatchEvent(new CustomEvent('toast', {
                                     detail: { type: 'success', message: 'Payment confirmed.' }
                                 }));
                             } else {
                                 message.textContent = 'Payment submitted. Please wait for confirmation.';
-                                window.dispatchEvent(new CustomEvent('toast', {
+                                document.dispatchEvent(new CustomEvent('toast', {
                                     detail: { type: 'success', message: message.textContent }
                                 }));
                                 if (submitButton) {

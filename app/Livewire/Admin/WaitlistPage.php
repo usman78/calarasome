@@ -17,6 +17,7 @@ class WaitlistPage extends Component
 
     public string $clinicFilter = 'all';
     public string $search = '';
+    public string $statusFilter = 'active';
     public int $perPage = 15;
 
     /** @var \Illuminate\Pagination\LengthAwarePaginator|array<int, WaitlistEntry>|null */
@@ -56,12 +57,23 @@ class WaitlistPage extends Component
         $this->loadEntries($priorityService);
     }
 
+    public function updatedStatusFilter(WaitlistPriorityService $priorityService): void
+    {
+        $this->resetPage();
+        $this->loadEntries($priorityService);
+    }
+
     private function loadEntries(WaitlistPriorityService $priorityService): void
     {
+        $priorityService->archiveStaleEntries(14);
+
         $query = WaitlistEntry::query()
             ->with(['clinic:id,name', 'patient:id,full_name,email,phone,no_show_count', 'appointmentType:id,name'])
-            ->where('status', 'active')
             ->orderByDesc('created_at');
+
+        if ($this->statusFilter !== 'all') {
+            $query->where('status', $this->statusFilter);
+        }
 
         if ($this->clinicFilter !== 'all') {
             $query->where('clinic_id', (int) $this->clinicFilter);
@@ -90,7 +102,9 @@ class WaitlistPage extends Component
         ];
 
         foreach ($entries as $entry) {
-            $entry = $priorityService->refreshEntry($entry);
+            if ($entry->status === 'active') {
+                $entry = $priorityService->refreshEntry($entry);
+            }
             $triage = $entry->triage_data ?? [];
             $window = $triage['preferred_time_window'] ?? null;
             $windowLabel = match ($window) {
@@ -109,12 +123,15 @@ class WaitlistPage extends Component
                 'phone' => $entry->patient?->phone,
                 'appointment_type' => $entry->appointmentType?->name ?? 'Appointment',
                 'priority_score' => $entry->priority_score,
+                'priority_score_display' => number_format((float) $entry->priority_score, 1),
                 'preferred_datetime' => $entry->preferred_datetime?->format('Y-m-d H:i'),
                 'preferred_time_window' => $windowLabel,
                 'notes' => $triage['notes'] ?? null,
                 'no_show_count' => $entry->patient?->no_show_count ?? 0,
                 'created_at' => $entry->created_at?->format('Y-m-d H:i'),
-                'wait_days' => CarbonImmutable::parse($entry->created_at)->diffInDays(now()),
+                'wait_days' => (int) CarbonImmutable::parse($entry->created_at)->diffInDays(now()),
+                'status' => $entry->status,
+                'archived_at' => $entry->archived_at?->format('Y-m-d'),
             ];
         }
 
