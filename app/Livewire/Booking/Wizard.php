@@ -319,6 +319,7 @@ class Wizard extends Component
         $this->appointmentId = $appointment->id;
         $this->confirmedSlotLocal = CarbonImmutable::parse($appointment->slot_datetime)->setTimezone($this->clinic->timezone)->format('Y-m-d H:i:s');
         $this->step = 6;
+        $this->dispatch('toast', type: 'success', message: 'Appointment confirmed. You can review the details below.');
     }
 
     public function enterWaitlistMode(): void
@@ -379,6 +380,7 @@ class Wizard extends Component
         $this->waitlistTier = $entry->tier;
         $this->waitlistScore = $entry->priority_score;
         $this->step = 6;
+        $this->dispatch('toast', type: 'success', message: 'You are on the waitlist. We will notify you if a spot opens.');
     }
 
     public function goToStep(int $step): void
