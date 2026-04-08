@@ -47,8 +47,12 @@
                 <p class="text-sm font-semibold text-zinc-900 dark:text-white">{{ $steps[$step] }}</p>
             </div>
         </div>
-        <div class="mt-3 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800">
-            <div class="h-full rounded-full bg-zinc-900 transition-all duration-300 dark:bg-zinc-100" style="width: {{ $progressPercent }}%"></div>
+        <div class="mt-3 h-2 rounded-full bg-zinc-200 dark:bg-zinc-800" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $progressPercent }}">
+            <div
+                wire:key="progress-{{ $step }}"
+                class="h-full rounded-full bg-zinc-900 transition-all duration-300 dark:bg-zinc-100"
+                style="width: {{ $progressPercent }}%; min-width: 6px; display: block; background-color: #18181b;"
+            ></div>
         </div>
     </div>
 
