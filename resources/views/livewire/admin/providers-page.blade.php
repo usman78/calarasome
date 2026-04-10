@@ -170,10 +170,11 @@
 
                 @php($days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])
                 <div class="space-y-3">
-                    @foreach ($schedules as $idx => $schedule)
-                        <div class="grid gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 sm:grid-cols-2 lg:grid-cols-6" wire:key="schedule-{{ $idx }}">
+                    @forelse ($schedules as $idx => $schedule)
+                        <div class="grid gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 md:gap-3" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) auto auto;" wire:key="schedule-{{ $idx }}">
                             <div>
-                                <flux:select wire:model="schedules.{{ $idx }}.day_of_week" label="Day">
+                                <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Day</label>
+                                <flux:select wire:model="schedules.{{ $idx }}.day_of_week">
                                     @foreach ($days as $dayIndex => $dayLabel)
                                         <flux:select.option value="{{ $dayIndex }}">{{ $dayLabel }}</flux:select.option>
                                     @endforeach
@@ -184,35 +185,46 @@
                             </div>
 
                             <div>
-                                <flux:input wire:model="schedules.{{ $idx }}.start_time" type="time" step="1" label="Start" />
+                                <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Start</label>
+                                <flux:input wire:model="schedules.{{ $idx }}.start_time" type="time" step="1" />
                                 @error("schedules.$idx.start_time")
                                     <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <flux:input wire:model="schedules.{{ $idx }}.end_time" type="time" step="1" label="End" />
+                                <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">End</label>
+                                <flux:input wire:model="schedules.{{ $idx }}.end_time" type="time" step="1" />
                                 @error("schedules.$idx.end_time")
                                     <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <flux:input wire:model="schedules.{{ $idx }}.effective_from" type="date" label="From" />
+                                <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">From</label>
+                                <flux:input wire:model="schedules.{{ $idx }}.effective_from" type="date" />
                                 @error("schedules.$idx.effective_from")
                                     <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <flux:input wire:model="schedules.{{ $idx }}.effective_until" type="date" label="Until" />
+                                <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Until</label>
+                                <flux:input wire:model="schedules.{{ $idx }}.effective_until" type="date" />
                                 @error("schedules.$idx.effective_until")
                                     <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="flex items-end justify-between gap-2">
-                                <flux:switch wire:model="schedules.{{ $idx }}.is_active" label="Active" />
+                            <div class="flex items-center gap-2">
+                                <flux:switch wire:model="schedules.{{ $idx }}.is_active" />
+                                <span class="text-xs font-medium text-zinc-600 dark:text-zinc-400">Active</span>
+                            </div>
+                            <div class="flex items-center">
                                 <flux:button variant="ghost" size="sm" wire:click="removeScheduleRow({{ $idx }})" wire:loading.attr="disabled" wire:target="addScheduleRow,removeScheduleRow,saveSchedules">Remove</flux:button>
                             </div>
                         </div>
-                    @endforeach
+                    @empty
+                        <div class="rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-sm text-zinc-500 dark:border-zinc-700">
+                            No schedules added. Click "Add Row" to create one.
+                        </div>
+                    @endforelse
                 </div>
 
                 <div wire:loading.flex wire:target="addScheduleRow,removeScheduleRow,saveSchedules" class="items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
