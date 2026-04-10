@@ -280,11 +280,8 @@ class AppointmentPaymentService
             throw new RuntimeException('Appointment has already passed.');
         }
 
-        $hoursUntil = $appointment->slot_datetime
-            ? now()->diffInHours($appointment->slot_datetime, false)
-            : null;
-
-        $isLate = $hoursUntil !== null && $hoursUntil < 24;
+        $deadline = $this->freeCancelDeadline($appointment);
+        $isLate = $deadline ? now()->greaterThan($deadline) : false;
         $paymentAction = 'none';
         $policy = $isLate ? 'deposit_retained' : 'no_charge';
 
@@ -611,5 +608,27 @@ class AppointmentPaymentService
             'usd' => 50,
             default => 50,
         };
+    }
+
+    public function freeCancelDeadline(Appointment $appointment): ?CarbonImmutable
+    {
+        if (! $appointment->slot_datetime) {
+            return null;
+        }
+
+        $slot = CarbonImmutable::parse($appointment->slot_datetime);
+        $bookedAt = $appointment->created_at
+            ? CarbonImmutable::parse($appointment->created_at)
+            : now();
+
+        $standardDeadline = $slot->subHours(24);
+        $minimumWindow = $bookedAt->addHours(2);
+        $deadline = $standardDeadline->greaterThan($minimumWindow) ? $standardDeadline : $minimumWindow;
+
+        if ($deadline->greaterThan($slot)) {
+            $deadline = $slot;
+        }
+
+        return $deadline;
     }
 }

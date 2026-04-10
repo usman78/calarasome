@@ -72,6 +72,7 @@ class Wizard extends Component
     public ?int $waitlistScore = null;
     public ?string $slotEmptyReason = null;
     public bool $canWaitlist = false;
+    public bool $autoSelectedDate = false;
 
     public ?int $appointmentId = null;
     public ?string $confirmedSlotLocal = null;
@@ -116,6 +117,7 @@ class Wizard extends Component
         $this->slotEmptyReason = null;
         $this->canWaitlist = false;
         $this->isWaitlistMode = false;
+        $this->autoSelectedDate = false;
         $this->requiresInsurance = (bool) (collect($this->appointmentTypes)->firstWhere('id', $appointmentTypeId)['is_medical'] ?? false);
         if (! $this->requiresInsurance) {
             $this->resetInsuranceFields();
@@ -139,6 +141,13 @@ class Wizard extends Component
         $this->slotEmptyReason = null;
         $this->canWaitlist = false;
         $this->isWaitlistMode = false;
+        $nextAvailableDate = $this->findNextAvailableDateForSelection();
+        if ($nextAvailableDate) {
+            $this->selectedDate = $nextAvailableDate;
+            $this->autoSelectedDate = true;
+        } else {
+            $this->autoSelectedDate = false;
+        }
         $this->loadSlots();
         $this->step = 4;
     }
@@ -148,6 +157,7 @@ class Wizard extends Component
         if ($this->step >= 4 && $this->providerSelection !== null) {
             $this->slotEmptyReason = null;
             $this->canWaitlist = false;
+            $this->autoSelectedDate = false;
             $this->loadSlots();
         }
     }
@@ -552,6 +562,58 @@ class Wizard extends Component
                 $this->canWaitlist = true;
             }
         }
+    }
+
+    private function findNextAvailableDateForSelection(): ?string
+    {
+        if (! $this->appointmentTypeId || ! $this->providerSelection) {
+            return null;
+        }
+
+        $appointmentType = AppointmentType::query()
+            ->where('clinic_id', $this->clinic->id)
+            ->find($this->appointmentTypeId);
+
+        if (! $appointmentType) {
+            return null;
+        }
+
+        $slotService = app(SlotAvailabilityService::class);
+        $startDate = now($this->clinic->timezone)->startOfDay();
+        $searchDays = 30;
+
+        for ($i = 0; $i <= $searchDays; $i++) {
+            $localDate = $startDate->addDays($i);
+            $forDateUtc = CarbonImmutable::parse($localDate->format('Y-m-d').' 00:00:00', $this->clinic->timezone)->utc();
+
+            if ($this->providerSelection === 'any') {
+                foreach ($this->providers as $provider) {
+                    $providerModel = Provider::query()
+                        ->where('clinic_id', $this->clinic->id)
+                        ->find((int) $provider['id']);
+                    if (! $providerModel) {
+                        continue;
+                    }
+                    $slots = $slotService->availableSlots($this->clinic, $providerModel, $appointmentType, $forDateUtc);
+                    if ($slots !== []) {
+                        return $localDate->format('Y-m-d');
+                    }
+                }
+            } else {
+                $provider = Provider::query()
+                    ->where('clinic_id', $this->clinic->id)
+                    ->find((int) $this->providerSelection);
+                if (! $provider) {
+                    return null;
+                }
+                $slots = $slotService->availableSlots($this->clinic, $provider, $appointmentType, $forDateUtc);
+                if ($slots !== []) {
+                    return $localDate->format('Y-m-d');
+                }
+            }
+        }
+
+        return null;
     }
 
     private function resetInsuranceFields(): void

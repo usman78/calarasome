@@ -26,11 +26,15 @@ class AppointmentCommunicationService
         }
 
         if ($emailPhi) {
-            $appointment->loadMissing(['clinic:id,name,timezone', 'provider:id,full_name', 'appointmentType:id,name']);
+            $appointment->loadMissing(['clinic:id,name,timezone', 'provider:id,full_name', 'appointmentType:id,name,is_medical,deposit_amount_cents,deposit_currency']);
             $timezone = $appointment->clinic?->timezone ?? 'UTC';
             $slotLocal = CarbonImmutable::parse($appointment->slot_datetime)
                 ->setTimezone($timezone)
                 ->format('Y-m-d H:i:s');
+            $depositRequired = $this->depositRequired($appointment->appointmentType);
+            $freeCancelUntil = $depositRequired ? $this->freeCancelUntilLocal($appointment, $timezone) : null;
+            $freeCancelDeadline = app(\App\Services\AppointmentPaymentService::class)->freeCancelDeadline($appointment);
+            $cancellationNotFree = $freeCancelDeadline ? now()->greaterThan($freeCancelDeadline) : false;
 
             Mail::to($patient->email)->send(
                 new PhiAppointmentEmail([
@@ -39,6 +43,9 @@ class AppointmentCommunicationService
                     'appointment_type' => $appointment->appointmentType?->name ?? 'Appointment',
                     'slot_local' => $slotLocal,
                     'timezone' => $timezone,
+                    'free_cancel_until' => $freeCancelUntil,
+                    'cancellation_not_free' => $cancellationNotFree,
+                    'deposit_required' => $depositRequired,
                 ])
             );
 
@@ -47,10 +54,19 @@ class AppointmentCommunicationService
 
         $issued = AppointmentAccessToken::issue($appointment, $patient);
 
+        $appointment->loadMissing(['appointmentType:id,is_medical,deposit_amount_cents,deposit_currency', 'clinic:id,name,timezone']);
+        $depositRequired = $this->depositRequired($appointment->appointmentType);
+        $freeCancelUntil = $depositRequired ? $this->freeCancelUntilLocal($appointment, $appointment->clinic?->timezone ?? 'UTC') : null;
+        $freeCancelDeadline = app(\App\Services\AppointmentPaymentService::class)->freeCancelDeadline($appointment);
+        $cancellationNotFree = $freeCancelDeadline ? now()->greaterThan($freeCancelDeadline) : false;
+
         Mail::to($patient->email)->send(
             new DeidentifiedAppointmentEmail(
                 $issued['token'],
-                $issued['record']->expires_at
+                $issued['record']->expires_at,
+                $freeCancelUntil,
+                $cancellationNotFree,
+                $depositRequired
             )
         );
     }
@@ -121,5 +137,39 @@ class AppointmentCommunicationService
             'slot_local' => $slotLocal,
             'timezone' => $timezone,
         ];
+    }
+
+    private function freeCancelUntilLocal(Appointment $appointment, string $timezone): ?string
+    {
+        if (! $appointment->slot_datetime) {
+            return null;
+        }
+
+        $slotLocal = CarbonImmutable::parse($appointment->slot_datetime)->setTimezone($timezone);
+        $bookedAt = $appointment->created_at ? CarbonImmutable::parse($appointment->created_at)->setTimezone($timezone) : now($timezone);
+        $standardDeadline = $slotLocal->subHours(24);
+        $minimumWindow = $bookedAt->addHours(2);
+        $deadline = $standardDeadline->greaterThan($minimumWindow) ? $standardDeadline : $minimumWindow;
+
+        if ($deadline->greaterThan($slotLocal)) {
+            $deadline = $slotLocal;
+        }
+
+        return $deadline->format('Y-m-d H:i');
+    }
+
+    private function depositRequired(?\App\Models\AppointmentType $appointmentType): bool
+    {
+        if (! $appointmentType) {
+            return false;
+        }
+
+        if ($appointmentType->is_medical) {
+            return false;
+        }
+
+        $amount = (int) ($appointmentType->deposit_amount_cents ?? 0);
+
+        return $amount >= 50;
     }
 }

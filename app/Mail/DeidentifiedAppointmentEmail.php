@@ -14,11 +14,17 @@ class DeidentifiedAppointmentEmail extends Mailable
 
     public string $secureUrl;
     public CarbonInterface $expiresAt;
+    public ?string $freeCancelUntil;
+    public bool $cancellationNotFree;
+    public bool $depositRequired;
 
-    public function __construct(string $token, CarbonInterface $expiresAt)
+    public function __construct(string $token, CarbonInterface $expiresAt, ?string $freeCancelUntil = null, bool $cancellationNotFree = false, bool $depositRequired = false)
     {
         $this->secureUrl = url('/appointments/secure/'.$token);
         $this->expiresAt = $expiresAt;
+        $this->freeCancelUntil = $freeCancelUntil;
+        $this->cancellationNotFree = $cancellationNotFree;
+        $this->depositRequired = $depositRequired;
     }
 
     public function build(): self

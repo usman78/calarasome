@@ -74,34 +74,34 @@
                     <button
                         type="button"
                         wire:click="$set('isNewPatient', true)"
-                        class="relative rounded-xl border p-4 text-left transition {{ $isNewPatient ? '!border-zinc-900 !bg-zinc-900 !text-white shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
+                        class="relative rounded-xl border p-4 text-left transition {{ $isNewPatient ? 'border-zinc-900! bg-zinc-900! text-white! shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
                     >
                         @if ($isNewPatient)
-                            <span class="absolute right-3 top-3 inline-flex size-5 items-center justify-center rounded-full bg-white text-zinc-900" aria-label="Selected">
+                            <span class="inline-flex size-5 items-center justify-center rounded-full mr-2 bg-white text-zinc-900" aria-label="Selected">
                                 <svg viewBox="0 0 20 20" fill="currentColor" class="size-3.5" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.2 7.25a1 1 0 0 1-1.42.004L3.29 9.176a1 1 0 1 1 1.42-1.408l4.09 4.125 6.49-6.537a1 1 0 0 1 1.414-.006Z" clip-rule="evenodd" />
                                 </svg>
                             </span>
                         @endif
-                        <div class="text-xs uppercase tracking-wide {{ $isNewPatient ? 'text-zinc-200' : 'text-zinc-500 dark:text-zinc-400' }}">New</div>
-                        <div class="mt-1 text-lg font-semibold {{ $isNewPatient ? 'text-white' : 'text-zinc-900 dark:text-zinc-100' }}">I am a NEW patient</div>
+                        <div class="inline-block text-xs uppercase tracking-wide {{ $isNewPatient ? 'text-zinc-200' : 'text-zinc-500 dark:text-zinc-400' }}">New</div>
+                        <div class="mt-1 text-lg font-semibold {{ $isNewPatient ? 'text-zinc-200' : 'text-zinc-900 dark:text-zinc-100' }}">I am a NEW patient</div>
                         <p class="mt-2 text-xs {{ $isNewPatient ? 'text-zinc-200' : 'text-zinc-600 dark:text-zinc-300' }}">First visit at this clinic. We will create your profile.</p>
                     </button>
 
                     <button
                         type="button"
                         wire:click="$set('isNewPatient', false)"
-                        class="relative rounded-xl border p-4 text-left transition {{ ! $isNewPatient ? '!border-zinc-900 !bg-zinc-900 !text-white shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
+                        class="relative rounded-xl border p-4 text-left transition {{ ! $isNewPatient ? 'border-zinc-900! bg-zinc-900! text-white! shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
                     >
                         @if (! $isNewPatient)
-                            <span class="absolute right-3 top-3 inline-flex size-5 items-center justify-center rounded-full bg-white text-zinc-900" aria-label="Selected">
+                            <span class="inline-flex size-5 items-center justify-center rounded-full mr-2 bg-white text-zinc-900" aria-label="Selected">
                                 <svg viewBox="0 0 20 20" fill="currentColor" class="size-3.5" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.2 7.25a1 1 0 0 1-1.42.004L3.29 9.176a1 1 0 1 1 1.42-1.408l4.09 4.125 6.49-6.537a1 1 0 0 1 1.414-.006Z" clip-rule="evenodd" />
                                 </svg>
                             </span>
                         @endif
-                        <div class="text-xs uppercase tracking-wide {{ ! $isNewPatient ? 'text-zinc-200' : 'text-zinc-500 dark:text-zinc-400' }}">Returning</div>
-                        <div class="mt-1 text-lg font-semibold {{ ! $isNewPatient ? 'text-white' : 'text-zinc-900 dark:text-zinc-100' }}">I am a RETURNING patient</div>
+                        <div class="inline-block text-xs uppercase tracking-wide {{ ! $isNewPatient ? 'text-zinc-200' : 'text-zinc-500 dark:text-zinc-400' }}">Returning</div>
+                        <div class="mt-1 text-lg font-semibold {{ ! $isNewPatient ? 'text-zinc-200' : 'text-zinc-900 dark:text-zinc-100' }}">I am a RETURNING patient</div>
                         <p class="mt-2 text-xs {{ ! $isNewPatient ? 'text-zinc-200' : 'text-zinc-600 dark:text-zinc-300' }}">We will match your existing record before confirming.</p>
                     </button>
                 </div>
@@ -133,7 +133,7 @@
                                 wire:click="chooseAppointmentType({{ $type['id'] }})"
                                 wire:loading.attr="disabled"
                                 wire:target="chooseAppointmentType"
-                                class="relative rounded-xl border p-4 text-left transition {{ $appointmentTypeId === $type['id'] ? '!border-zinc-900 !bg-zinc-900 !text-white shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
+                                class="relative rounded-xl border p-4 text-left transition {{ $appointmentTypeId === $type['id'] ? 'border-zinc-900! bg-zinc-900! text-white! shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
                             >
                                 @if ($appointmentTypeId === $type['id'])
                                     <span class="absolute right-3 top-3 inline-flex size-5 items-center justify-center rounded-full bg-white text-zinc-900" aria-label="Selected">
@@ -176,7 +176,7 @@
                         wire:click="chooseProvider('any')"
                         wire:loading.attr="disabled"
                         wire:target="chooseProvider"
-                        class="relative rounded-xl border p-4 text-left transition {{ $providerSelection === 'any' ? '!border-zinc-900 !bg-zinc-900 !text-white shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
+                        class="relative rounded-xl border p-4 text-left transition {{ $providerSelection === 'any' ? 'border-zinc-900! bg-zinc-900! text-white! shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
                     >
                         @if ($providerSelection === 'any')
                             <span class="absolute right-3 top-3 inline-flex size-5 items-center justify-center rounded-full bg-white text-zinc-900" aria-label="Selected">
@@ -198,7 +198,7 @@
                             wire:click="chooseProvider('{{ $provider['id'] }}')"
                             wire:loading.attr="disabled"
                             wire:target="chooseProvider"
-                            class="relative rounded-xl border p-4 text-left transition {{ $providerSelection == $provider['id'] ? '!border-zinc-900 !bg-zinc-900 !text-white shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
+                            class="relative rounded-xl border p-4 text-left transition {{ $providerSelection == $provider['id'] ? 'border-zinc-900! bg-zinc-900! text-white! shadow-xs' : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500' }}"
                         >
                             @if ($providerSelection == $provider['id'])
                                 <span class="absolute right-3 top-3 inline-flex size-5 items-center justify-center rounded-full bg-white text-zinc-900" aria-label="Selected">
@@ -242,6 +242,9 @@
                 <div class="w-full sm:max-w-xs">
                     <flux:input wire:model.live="selectedDate" label="Preferred Date" type="date" />
                     <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Times below are shown in {{ $clinic->timezone }}.</p>
+                    @if ($autoSelectedDate)
+                        <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-300">Auto-selected earliest available date.</p>
+                    @endif
                 </div>
 
                 @error('slot')
@@ -294,6 +297,27 @@
         @endif
 
         @if ($step === 5)
+            @php
+                $slotWithin24h = false;
+                $freeCancelUntil = null;
+                if ($slotLocalDatetime) {
+                    try {
+                        $slotLocal = \Carbon\CarbonImmutable::parse($slotLocalDatetime, $clinic->timezone);
+                        $slotWithin24h = $slotLocal->lessThanOrEqualTo(now($clinic->timezone)->addHours(24));
+                        $standardDeadline = $slotLocal->subHours(24);
+                        $minimumWindow = now($clinic->timezone)->addHours(2);
+                        $deadline = $standardDeadline->greaterThan($minimumWindow) ? $standardDeadline : $minimumWindow;
+                        if ($deadline->greaterThan($slotLocal)) {
+                            $deadline = $slotLocal;
+                        }
+                        if ($slotLocal->lessThanOrEqualTo(now($clinic->timezone)->addHours(26))) {
+                            $freeCancelUntil = $deadline->format('Y-m-d H:i');
+                        }
+                    } catch (\Throwable) {
+                        $slotWithin24h = false;
+                    }
+                }
+            @endphp
             <div @if (! $isWaitlistMode) wire:poll.1s="refreshReservationTimer" @endif class="space-y-5 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 sm:p-5">
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <flux:heading size="lg">5. Contact, Consent and Confirm</flux:heading>
@@ -305,6 +329,15 @@
                         Slot reserved with {{ $assignedProviderName }}. Time remaining:
                         <strong>{{ floor($reservationSecondsRemaining / 60) }}:{{ str_pad((string) ($reservationSecondsRemaining % 60), 2, '0', STR_PAD_LEFT) }}</strong>
                     </div>
+                    @if ($slotWithin24h)
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+                            @if ($freeCancelUntil)
+                                You can cancel for free until {{ $freeCancelUntil }} ({{ $clinic->timezone }}). After that, your deposit will be retained.
+                            @else
+                                This appointment is within 24 hours. Cancellations may retain the deposit and online cancellation may be restricted.
+                            @endif
+                        </div>
+                    @endif
                 @else
                     <div class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
                         No slots are currently available. Join the waitlist and we'll notify you when a spot opens.

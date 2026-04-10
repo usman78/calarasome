@@ -51,7 +51,10 @@ class SlotAvailabilityService
 
         return $slots
             ->filter(function (CarbonImmutable $slot) use ($clinic): bool {
-                return $slot->greaterThanOrEqualTo(now()->addHours($clinic->min_booking_notice_hours)->utc());
+                $minNotice = now()->addHours($clinic->min_booking_notice_hours)->utc();
+
+                return $slot->greaterThanOrEqualTo($minNotice)
+                    && $slot->greaterThanOrEqualTo(now()->utc());
             })
             ->filter(fn (CarbonImmutable $slot) => $this->isSlotAvailable($clinic, $provider, $appointmentType, $slot))
             ->map(fn (CarbonImmutable $slot) => [

@@ -27,7 +27,10 @@
         @php
             $appointmentStatus = $details['status'] ?? 'pending';
             $canCancel = ! in_array($appointmentStatus, ['cancelled_by_patient', 'cancelled_by_clinic', 'no_show'], true);
-            $cancelMessage = "Cancel this appointment? This will apply the clinic's cancellation policy and may retain your deposit if within 24 hours.";
+            $freeCancelUntil = $details['free_cancel_until'] ?? null;
+            $cancelMessage = $freeCancelUntil
+                ? "Cancel this appointment? You can cancel for free until {$freeCancelUntil}. After that, your deposit will be retained."
+                : "Cancel this appointment? This will apply the clinic's cancellation policy and may retain your deposit if within 24 hours.";
         @endphp
 
         <div
@@ -140,17 +143,24 @@
                     </div>
                     <button
                         type="button"
-                        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                         :disabled="isLoading || !canCancel"
+                        x-show="canCancel"
                         @click="cancel()"
                     >
                         <span x-show="!isLoading">Cancel Appointment</span>
                         <span x-show="isLoading">Canceling...</span>
                     </button>
                 </div>
-                <p class="mt-2 text-xs text-zinc-500" x-show="canCancel">
-                    You can cancel online up to the appointment time. Cancellations within 24 hours may retain the deposit.
-                </p>
+                @if (! empty($details['free_cancel_until']))
+                    <p class="mt-2 text-xs text-zinc-500" x-show="canCancel">
+                        You can cancel for free until {{ $details['free_cancel_until'] }} ({{ $details['timezone'] }}). After that, your deposit will be retained.
+                    </p>
+                @else
+                    <p class="mt-2 text-xs text-zinc-500" x-show="canCancel">
+                        You can cancel online up to the appointment time. Cancellations within 24 hours may retain the deposit.
+                    </p>
+                @endif
                 <p class="mt-2 text-xs text-zinc-500" x-show="!canCancel">
                     This appointment can no longer be cancelled online.
                 </p>

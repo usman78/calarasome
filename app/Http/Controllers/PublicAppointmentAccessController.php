@@ -43,6 +43,11 @@ class PublicAppointmentAccessController extends Controller
                 $slotLocal = CarbonImmutable::parse($appointment->slot_datetime)
                     ->setTimezone($appointment->clinic?->timezone ?? 'UTC')
                     ->format('Y-m-d H:i:s');
+                $freeCancelUntil = app(\App\Services\AppointmentPaymentService::class)
+                    ->freeCancelDeadline($appointment);
+                $freeCancelUntilLocal = $freeCancelUntil
+                    ? $freeCancelUntil->setTimezone($appointment->clinic?->timezone ?? 'UTC')->format('Y-m-d H:i')
+                    : null;
 
                 $details = [
                     'appointment_id' => $appointment->id,
@@ -52,6 +57,7 @@ class PublicAppointmentAccessController extends Controller
                     'slot_local' => $slotLocal,
                     'timezone' => $appointment->clinic?->timezone ?? 'UTC',
                     'status' => $appointment->status ?? 'pending',
+                    'free_cancel_until' => $freeCancelUntilLocal,
                 ];
             }
         }
