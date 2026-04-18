@@ -6,22 +6,37 @@ use App\Mail\DeidentifiedAppointmentEmail;
 use App\Mail\AppointmentCancellationClinicEmail;
 use App\Mail\AppointmentCancellationPatientEmail;
 use App\Mail\AppointmentNoShowEmail;
+use App\Mail\AppointmentNoShowReversedEmail;
 use App\Mail\PhiAppointmentEmail;
 use App\Models\Appointment;
 use App\Models\AppointmentAccessToken;
 use App\Models\Patient;
 use Carbon\CarbonImmutable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Support\Facades\Mail;
 
 class AppointmentCommunicationService
 {
+    public function __construct(
+        private readonly EmailDeliveryService $emailDeliveryService,
+    ) {
+    }
+
     public function sendPostBookingEmail(Appointment $appointment, Patient $patient, bool $emailPhi): void
     {
         $consent = $patient->communication_consent ?? [];
         $hasConsent = (bool) ($consent['emailConsent'] ?? false);
 
         if (! $hasConsent || ! $patient->email) {
+            $this->emailDeliveryService->logSkipped(
+                $appointment->clinic,
+                $patient,
+                $patient->email,
+                $emailPhi ? PhiAppointmentEmail::class : DeidentifiedAppointmentEmail::class,
+                $patient->email ? 'missing_consent' : 'missing_email',
+                'appointment',
+                $appointment->id,
+                ['kind' => 'post_booking']
+            );
             return;
         }
 
@@ -36,7 +51,9 @@ class AppointmentCommunicationService
             $freeCancelDeadline = app(\App\Services\AppointmentPaymentService::class)->freeCancelDeadline($appointment);
             $cancellationNotFree = $freeCancelDeadline ? now()->greaterThan($freeCancelDeadline) : false;
 
-            Mail::to($patient->email)->send(
+            $this->emailDeliveryService->sendPatientMail(
+                $appointment->clinic,
+                $patient,
                 new PhiAppointmentEmail([
                     'clinic' => $appointment->clinic?->name ?? 'Clinic',
                     'provider' => $appointment->provider?->full_name ?? 'Provider',
@@ -46,7 +63,10 @@ class AppointmentCommunicationService
                     'free_cancel_until' => $freeCancelUntil,
                     'cancellation_not_free' => $cancellationNotFree,
                     'deposit_required' => $depositRequired,
-                ])
+                ]),
+                'appointment',
+                $appointment->id,
+                ['kind' => 'post_booking_phi']
             );
 
             return;
@@ -60,14 +80,19 @@ class AppointmentCommunicationService
         $freeCancelDeadline = app(\App\Services\AppointmentPaymentService::class)->freeCancelDeadline($appointment);
         $cancellationNotFree = $freeCancelDeadline ? now()->greaterThan($freeCancelDeadline) : false;
 
-        Mail::to($patient->email)->send(
+        $this->emailDeliveryService->sendPatientMail(
+            $appointment->clinic,
+            $patient,
             new DeidentifiedAppointmentEmail(
                 $issued['token'],
                 $issued['record']->expires_at,
                 $freeCancelUntil,
                 $cancellationNotFree,
                 $depositRequired
-            )
+            ),
+            'appointment',
+            $appointment->id,
+            ['kind' => 'post_booking_secure_link']
         );
     }
 
@@ -110,16 +135,25 @@ class AppointmentCommunicationService
         $this->sendIfConsented($patient, new AppointmentNoShowEmail($details));
     }
 
+    public function sendNoShowReversedEmail(Appointment $appointment, Patient $patient, bool $refunded): void
+    {
+        $details = $this->buildDetails($appointment, $patient);
+        $details['refund_note'] = $refunded
+            ? 'This was marked in error and your deposit has been refunded.'
+            : 'This was marked in error. No deposit will be retained.';
+
+        $this->sendIfConsented($patient, new AppointmentNoShowReversedEmail($details));
+    }
+
     private function sendIfConsented(Patient $patient, Mailable $mailable): void
     {
-        $consent = $patient->communication_consent ?? [];
-        $hasConsent = (bool) ($consent['emailConsent'] ?? false);
-
-        if (! $hasConsent || ! $patient->email) {
-            return;
-        }
-
-        Mail::to($patient->email)->send($mailable);
+        $this->emailDeliveryService->sendPatientMail(
+            $patient->clinic,
+            $patient,
+            $mailable,
+            'patient_notification',
+            $patient->id
+        );
     }
 
     /** @return array<string, mixed> */

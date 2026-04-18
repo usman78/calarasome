@@ -184,6 +184,55 @@
                                         {{ $appointment['clinic'] }}
                                     </div>
                                 </div>
+
+                                @if ($appointment['status'] === 'no_show')
+                                    <div class="col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-100">
+                                        <div class="font-semibold">No-show reversal</div>
+                                        @if ($appointment['can_undo_no_show'])
+                                            <p class="mt-1 text-xs text-amber-800 dark:text-amber-200">
+                                                Quick undo available until {{ $appointment['undo_window_ends'] }} ({{ $appointment['timezone'] }}).
+                                            </p>
+                                            <div class="mt-3">
+                                                <flux:button
+                                                    size="sm"
+                                                    variant="primary"
+                                                    x-on:click="confirm('Undo this no-show and refund any captured deposit?') && $wire.undoNoShow({{ $appointment['id'] }})"
+                                                    wire:loading.attr="disabled"
+                                                >
+                                                    Undo No-Show
+                                                </flux:button>
+                                            </div>
+                                        @elseif ($appointment['requires_reasoned_reversal'])
+                                            <p class="mt-1 text-xs text-amber-800 dark:text-amber-200">
+                                                The quick undo window has closed. Reversal now requires a reason and creates an audit trail.
+                                            </p>
+                                            <div class="mt-3 grid gap-3 md:grid-cols-2">
+                                                <div>
+                                                    <flux:select wire:model="reversalReasons.{{ $appointment['id'] }}" label="Reversal Reason">
+                                                        <flux:select.option value="">Select a reason</flux:select.option>
+                                                        <flux:select.option value="marked_in_error">Marked in error</flux:select.option>
+                                                        <flux:select.option value="patient_attended">Patient attended</flux:select.option>
+                                                        <flux:select.option value="system_issue">System issue</flux:select.option>
+                                                    </flux:select>
+                                                </div>
+                                                <div>
+                                                    <flux:input wire:model="reversalNotes.{{ $appointment['id'] }}" label="Notes (optional)" type="text" placeholder="Add context for the audit trail." />
+                                                </div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <flux:button
+                                                    size="sm"
+                                                    variant="primary"
+                                                    x-on:click="confirm('Reverse this no-show and issue any refund now?') && $wire.reverseNoShowWithReason({{ $appointment['id'] }})"
+                                                    wire:loading.attr="disabled"
+                                                >
+                                                    Reverse No-Show
+                                                </flux:button>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+
                                 <div class="mb-2">
                                     <div class="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Insurance</div>
                                     <div class="font-medium text-zinc-900 dark:text-zinc-100 text-xs capitalize">

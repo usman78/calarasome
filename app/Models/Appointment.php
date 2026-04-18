@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Appointment extends Model
@@ -18,11 +19,18 @@ class Appointment extends Model
         'patient_id',
         'slot_datetime',
         'status',
+        'no_show_previous_status',
+        'no_show_marked_at',
+        'no_show_reversible_until',
+        'no_show_reversed_at',
         'triage_data',
     ];
 
     protected $casts = [
         'slot_datetime' => 'datetime',
+        'no_show_marked_at' => 'datetime',
+        'no_show_reversible_until' => 'datetime',
+        'no_show_reversed_at' => 'datetime',
         'triage_data' => 'array',
     ];
 
@@ -54,5 +62,10 @@ class Appointment extends Model
     public function insuranceVerification(): HasOne
     {
         return $this->hasOne(InsuranceVerification::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
     }
 }

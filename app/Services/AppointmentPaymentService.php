@@ -7,17 +7,21 @@ use App\Mail\PaymentGracePeriodPatientEmail;
 use App\Models\Appointment;
 use App\Models\AppointmentPayment;
 use App\Models\AppointmentType;
+use App\Models\AuditLog;
 use App\Models\Patient;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
 class AppointmentPaymentService
 {
+    public const NO_SHOW_REVERSAL_WINDOW_MINUTES = 30;
+
     public function __construct(
         private readonly StripeGateway $stripeGateway,
         private readonly AppointmentCommunicationService $communicationService,
+        private readonly EmailDeliveryService $emailDeliveryService,
     ) {
     }
 
@@ -411,7 +415,14 @@ class AppointmentPaymentService
             }
         }
 
-        $appointment->update(['status' => 'no_show']);
+        $markedAt = now();
+        $appointment->update([
+            'status' => 'no_show',
+            'no_show_previous_status' => $appointment->status,
+            'no_show_marked_at' => $markedAt,
+            'no_show_reversible_until' => $markedAt->copy()->addMinutes(self::NO_SHOW_REVERSAL_WINDOW_MINUTES),
+            'no_show_reversed_at' => null,
+        ]);
 
         if ($appointment->patient) {
             $appointment->patient->increment('no_show_count');
@@ -421,6 +432,87 @@ class AppointmentPaymentService
         return [
             'appointment_status' => 'no_show',
             'payment_action' => $paymentAction,
+        ];
+    }
+
+    /** @return array{appointment_status:string,payment_action:string,window_mode:string} */
+    public function reverseNoShow(
+        Appointment $appointment,
+        int $adminId,
+        ?string $reason = null,
+        ?string $notes = null,
+    ): array {
+        $appointment->loadMissing(['payment', 'patient', 'clinic']);
+
+        if ($appointment->status !== 'no_show') {
+            throw new RuntimeException('Only no-show appointments can be reversed.');
+        }
+
+        $withinWindow = $this->canUndoNoShowNow($appointment);
+        if (! $withinWindow && ! filled($reason)) {
+            throw new RuntimeException('A reason is required once the no-show undo window has closed.');
+        }
+
+        $reason = $withinWindow ? 'marked_in_error' : (string) $reason;
+        $paymentAction = 'none';
+        $refunded = false;
+        $windowMode = $withinWindow ? 'undo_window' : 'post_window';
+
+        DB::transaction(function () use ($appointment, $adminId, $reason, $notes, $windowMode, &$paymentAction, &$refunded): void {
+            $appointment->refresh();
+            $appointment->loadMissing(['payment', 'patient', 'clinic']);
+
+            if ($appointment->status !== 'no_show') {
+                throw new RuntimeException('This appointment is no longer marked as no-show.');
+            }
+
+            $payment = $appointment->payment;
+            if ($payment && $payment->amount_cents > 0 && $payment->strategy !== 'skip') {
+                if ($payment->status === 'refunded') {
+                    $paymentAction = 'refunded';
+                    $refunded = true;
+                } elseif ($this->isCaptured($payment)) {
+                    $paymentAction = $this->refundPayment($payment);
+                    $refunded = true;
+                }
+            }
+
+            $appointment->update([
+                'status' => $appointment->no_show_previous_status ?: 'completed',
+                'no_show_reversed_at' => now(),
+                'no_show_reversible_until' => null,
+            ]);
+
+            if ($appointment->patient && $appointment->patient->no_show_count > 0) {
+                $appointment->patient->decrement('no_show_count');
+            }
+
+            AuditLog::query()->create([
+                'user_id' => $adminId,
+                'clinic_id' => $appointment->clinic_id,
+                'appointment_id' => $appointment->id,
+                'patient_id' => $appointment->patient_id,
+                'action' => 'reverse_no_show',
+                'reason' => $reason,
+                'notes' => $notes,
+                'meta' => [
+                    'window_mode' => $windowMode,
+                    'payment_action' => $paymentAction,
+                    'previous_status' => $appointment->no_show_previous_status,
+                ],
+            ]);
+        });
+
+        $appointment = $appointment->fresh(['patient', 'clinic', 'payment']);
+
+        if ($appointment?->patient) {
+            $this->communicationService->sendNoShowReversedEmail($appointment, $appointment->patient, $refunded);
+        }
+
+        return [
+            'appointment_status' => $appointment?->status ?? 'completed',
+            'payment_action' => $paymentAction,
+            'window_mode' => $windowMode,
         ];
     }
 
@@ -517,18 +609,33 @@ class AppointmentPaymentService
             'grace_expires_at' => $payment->grace_expires_at?->format('Y-m-d H:i:s') ?? now()->addHours(48)->format('Y-m-d H:i:s'),
         ];
 
-        Mail::to($patient->email)->send(new PaymentGracePeriodPatientEmail($details));
+        $this->emailDeliveryService->sendPatientMail(
+            $appointment->clinic,
+            $patient,
+            new PaymentGracePeriodPatientEmail($details),
+            'appointment_payment',
+            $payment->id,
+            ['kind' => 'payment_grace_started']
+        );
 
         $adminEmail = config('services.payment_alerts.admin_email');
         if ($adminEmail) {
-            Mail::to($adminEmail)->send(new PaymentGracePeriodAdminEmail([
-                'clinic' => $details['clinic'],
-                'patient' => $patient->full_name ?? 'Patient',
-                'email' => $patient->email,
-                'slot_local' => $details['slot_local'],
-                'timezone' => $details['timezone'],
-                'grace_expires_at' => $details['grace_expires_at'],
-            ]));
+            $this->emailDeliveryService->sendToAddress(
+                $appointment->clinic,
+                $patient,
+                $adminEmail,
+                new PaymentGracePeriodAdminEmail([
+                    'clinic' => $details['clinic'],
+                    'patient' => $patient->full_name ?? 'Patient',
+                    'email' => $patient->email,
+                    'slot_local' => $details['slot_local'],
+                    'timezone' => $details['timezone'],
+                    'grace_expires_at' => $details['grace_expires_at'],
+                ]),
+                'appointment_payment',
+                $payment->id,
+                ['kind' => 'payment_grace_admin_alert']
+            );
         }
     }
 
@@ -630,5 +737,18 @@ class AppointmentPaymentService
         }
 
         return $deadline;
+    }
+
+    public function canUndoNoShowNow(Appointment $appointment): bool
+    {
+        if ($appointment->status !== 'no_show') {
+            return false;
+        }
+
+        if (! $appointment->no_show_reversible_until) {
+            return false;
+        }
+
+        return $appointment->no_show_reversible_until->greaterThan(now());
     }
 }

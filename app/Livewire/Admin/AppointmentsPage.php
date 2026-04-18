@@ -34,6 +34,10 @@ class AppointmentsPage extends Component
 
     /** @var array<int, bool> */
     public array $openDetails = [];
+    /** @var array<int, string> */
+    public array $reversalReasons = [];
+    /** @var array<int, string> */
+    public array $reversalNotes = [];
 
     public function mount(): void
     {
@@ -113,6 +117,57 @@ class AppointmentsPage extends Component
         try {
             $result = app(AppointmentPaymentService::class)->markNoShow($appointment, true);
             $this->actionMessage = "Appointment marked no-show ({$result['payment_action']}).";
+            $this->dispatch('toast', type: 'success', message: $this->actionMessage);
+        } catch (RuntimeException $exception) {
+            $this->actionError = $exception->getMessage();
+            $this->dispatch('toast', type: 'error', message: $this->actionError);
+        }
+
+        $this->loadAppointments();
+    }
+
+    public function undoNoShow(int $appointmentId): void
+    {
+        $this->ensureAdmin();
+        $this->actionError = null;
+        $this->actionMessage = null;
+
+        $appointment = Appointment::query()->findOrFail($appointmentId);
+
+        try {
+            $result = app(AppointmentPaymentService::class)->reverseNoShow($appointment, auth()->id() ?? 0);
+            $this->actionMessage = "No-show reversed ({$result['payment_action']}).";
+            $this->dispatch('toast', type: 'success', message: $this->actionMessage);
+        } catch (RuntimeException $exception) {
+            $this->actionError = $exception->getMessage();
+            $this->dispatch('toast', type: 'error', message: $this->actionError);
+        }
+
+        $this->loadAppointments();
+    }
+
+    public function reverseNoShowWithReason(int $appointmentId): void
+    {
+        $this->ensureAdmin();
+        $this->actionError = null;
+        $this->actionMessage = null;
+
+        $reason = trim((string) ($this->reversalReasons[$appointmentId] ?? ''));
+        $notes = trim((string) ($this->reversalNotes[$appointmentId] ?? ''));
+
+        if ($reason === '') {
+            $this->actionError = 'Choose a reversal reason before reversing a no-show.';
+            $this->dispatch('toast', type: 'error', message: $this->actionError);
+
+            return;
+        }
+
+        $appointment = Appointment::query()->findOrFail($appointmentId);
+
+        try {
+            $result = app(AppointmentPaymentService::class)->reverseNoShow($appointment, auth()->id() ?? 0, $reason, $notes ?: null);
+            $this->actionMessage = "No-show reversed ({$result['payment_action']}).";
+            unset($this->reversalReasons[$appointmentId], $this->reversalNotes[$appointmentId]);
             $this->dispatch('toast', type: 'success', message: $this->actionMessage);
         } catch (RuntimeException $exception) {
             $this->actionError = $exception->getMessage();
@@ -205,6 +260,11 @@ class AppointmentsPage extends Component
                     : null;
                 $isFinal = in_array($appointment->status, ['cancelled_by_patient', 'cancelled_by_clinic', 'no_show'], true);
                 $canNoShow = ! $isFinal && $appointment->slot_datetime && $appointment->slot_datetime->lessThan($nowUtc);
+                $canUndoNoShow = app(AppointmentPaymentService::class)->canUndoNoShowNow($appointment);
+                $requiresReasonedReversal = $appointment->status === 'no_show' && ! $canUndoNoShow;
+                $undoWindowEnds = $appointment->no_show_reversible_until
+                    ? CarbonImmutable::parse($appointment->no_show_reversible_until)->setTimezone($timezone)->format('Y-m-d H:i:s')
+                    : null;
 
                 return [
                     'id' => $appointment->id,
@@ -224,6 +284,9 @@ class AppointmentsPage extends Component
                     'insurance_urgency' => $appointment->insuranceVerification?->urgency ?? null,
                     'can_cancel' => ! $isFinal,
                     'can_no_show' => $canNoShow,
+                    'can_undo_no_show' => $canUndoNoShow,
+                    'requires_reasoned_reversal' => $requiresReasonedReversal,
+                    'undo_window_ends' => $undoWindowEnds,
                 ];
             });
     }
