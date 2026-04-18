@@ -22,34 +22,34 @@
         </div>
 
         <div class="mt-3 grid gap-3 sm:grid-cols-2">
-            <article class="flex items-end justify-between rounded-lg border border-gray-100 bg-white p-6">
+            <article class="flex items-end justify-between rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
                 <div class="flex items-center gap-4">
-                    <span class="hidden rounded-full bg-gray-100 p-2 text-gray-600 sm:block">
+                    <span class="hidden rounded-full bg-zinc-100 p-2 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 sm:block">
                     <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     </span>
 
                     <div>
-                    <p class="text-sm text-gray-500">Today</p>
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Today</p>
 
-                    <p class="text-2xl font-medium text-gray-900">{{ $todayCount}}</p>
+                    <p class="text-2xl font-medium text-zinc-900 dark:text-white">{{ $todayCount}}</p>
                     </div>
                 </div>
             </article>
 
-            <article class="flex items-end justify-between rounded-lg border border-gray-100 bg-white p-6">
+            <article class="flex items-end justify-between rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
                 <div class="flex items-center gap-4">
-                    <span class="hidden rounded-full bg-gray-100 p-2 text-gray-600 sm:block">
+                    <span class="hidden rounded-full bg-zinc-100 p-2 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 sm:block">
                     <svg class="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     </span>
 
                     <div>
-                    <p class="text-sm text-gray-500">Next 7 Days</p>
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Next 7 Days</p>
 
-                    <p class="text-2xl font-medium text-gray-900">{{ $next7Count }}</p>
+                    <p class="text-2xl font-medium text-zinc-900 dark:text-white">{{ $next7Count }}</p>
                     </div>
                 </div>
             </article>
