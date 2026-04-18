@@ -12,7 +12,6 @@ use App\Models\WaitlistNotificationRecipient;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 
 class WaitlistNotificationService
 {
@@ -24,7 +23,8 @@ class WaitlistNotificationService
     ];
 
     public function __construct(
-        private readonly SlotAvailabilityService $slotAvailabilityService
+        private readonly SlotAvailabilityService $slotAvailabilityService,
+        private readonly EmailDeliveryService $emailDeliveryService,
     ) {
     }
 
@@ -334,12 +334,27 @@ class WaitlistNotificationService
 
         if (! $patient || ! $patient->email || ! $hasConsent) {
             $issued['record']->update(['status' => 'canceled']);
+            $this->emailDeliveryService->logSkipped(
+                $notification->clinic,
+                $patient,
+                $patient?->email,
+                WaitlistSlotAvailableEmail::class,
+                $patient?->email ? 'missing_consent' : 'missing_email',
+                'waitlist_notification',
+                $notification->id,
+                ['recipient_id' => $issued['record']->id, 'kind' => 'waitlist_slot_offer']
+            );
 
             return;
         }
 
-        Mail::to($patient->email)->send(
-            new WaitlistSlotAvailableEmail($issued['token'], $expiresAt)
+        $this->emailDeliveryService->sendPatientMail(
+            $notification->clinic,
+            $patient,
+            new WaitlistSlotAvailableEmail($issued['token'], $expiresAt),
+            'waitlist_notification',
+            $notification->id,
+            ['recipient_id' => $issued['record']->id, 'kind' => 'waitlist_slot_offer']
         );
     }
 

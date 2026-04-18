@@ -10,7 +10,6 @@ use App\Models\WaitlistEntry;
 use App\Mail\WaitlistJoinedEmail;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
-use Illuminate\Support\Facades\Mail;
 
 class WaitlistEntryService
 {
@@ -18,6 +17,7 @@ class WaitlistEntryService
         private readonly PatientMatchingService $patientMatchingService,
         private readonly ClinicDateTimeService $clinicDateTimeService,
         private readonly WaitlistPriorityService $priorityService,
+        private readonly EmailDeliveryService $emailDeliveryService,
     ) {
     }
 
@@ -101,20 +101,21 @@ class WaitlistEntryService
             'status' => 'active',
         ]);
 
-        $consent = $patient->communication_consent ?? [];
-        $hasConsent = (bool) ($consent['emailConsent'] ?? false);
         $preferredWindow = $payload['triage_data']['preferred_time_window'] ?? null;
 
-        if ($patient->email && $hasConsent) {
-            Mail::to($patient->email)->send(
-                new WaitlistJoinedEmail(
-                    $clinic->name ?? 'Clinic',
-                    $appointmentType->name ?? 'Appointment',
-                    $preferredDate,
-                    $preferredWindow
-                )
-            );
-        }
+        $this->emailDeliveryService->sendPatientMail(
+            $clinic,
+            $patient,
+            new WaitlistJoinedEmail(
+                $clinic->name ?? 'Clinic',
+                $appointmentType->name ?? 'Appointment',
+                $preferredDate,
+                $preferredWindow
+            ),
+            'waitlist_entry',
+            $entry->id,
+            ['kind' => 'waitlist_joined']
+        );
 
         return $this->priorityService->refreshEntry($entry);
     }

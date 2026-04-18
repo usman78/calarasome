@@ -22,7 +22,14 @@
         </a>
     @endif
 
-    @if ($insuranceUrgent === 0 && $paymentsInGrace === 0 && $paymentsExpired === 0 && $matchAlerts === 0)
+    @if ($emailFailures > 0)
+        <a href="{{ route('admin.email-delivery') }}" class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 shadow-xs hover:bg-red-100 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-100 sm:p-4">
+            <div class="font-semibold">Email Delivery Failures</div>
+            <div class="mt-1">{{ $emailFailures }} failed email(s) need review.</div>
+        </a>
+    @endif
+
+    @if ($insuranceUrgent === 0 && $paymentsInGrace === 0 && $paymentsExpired === 0 && $matchAlerts === 0 && $emailFailures === 0)
         <div class="rounded-xl border border-zinc-200 bg-white p-3 text-sm text-zinc-500 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 sm:p-4">
             No urgent alerts right now.
         </div>

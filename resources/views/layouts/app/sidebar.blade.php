@@ -37,6 +37,9 @@
                         <flux:sidebar.item icon="gift" :href="route('admin.waitlist-offers')" :current="request()->routeIs('admin.waitlist-offers')" wire:navigate>
                             {{ __('Waitlist Offers') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="envelope" :href="route('admin.email-delivery')" :current="request()->routeIs('admin.email-delivery')" wire:navigate>
+                            {{ __('Email Delivery') }}
+                        </flux:sidebar.item>
                         <flux:sidebar.item icon="exclamation-triangle" :href="route('admin.patient-match-alerts')" :current="request()->routeIs('admin.patient-match-alerts')" wire:navigate>
                             {{ __('Match Alerts') }}
                         </flux:sidebar.item>

@@ -11,6 +11,7 @@ use App\Models\SlotReservation;
 use App\Services\AppointmentCommunicationService;
 use App\Services\AppointmentPaymentService;
 use App\Services\ClinicDateTimeService;
+use App\Services\EmailVerificationService;
 use App\Services\InsuranceVerificationService;
 use App\Services\PatientMatchingService;
 use App\Services\ProviderAssignmentService;
@@ -49,10 +50,15 @@ class Wizard extends Component
 
     public string $fullName = '';
     public string $email = '';
+    public string $emailVerificationCode = '';
     public string $phone = '';
     public string $dateOfBirth = '';
     public bool $emailConsent = true;
     public bool $emailPhi = false;
+    public bool $emailVerified = false;
+    public ?string $verifiedEmail = null;
+    public ?string $emailVerificationSentTo = null;
+    public ?string $emailVerificationSentAt = null;
     public bool $requiresInsurance = false;
     public string $insuranceProvider = '';
     public string $insuranceMemberId = '';
@@ -162,6 +168,78 @@ class Wizard extends Component
         }
     }
 
+    public function updatedEmail(): void
+    {
+        if ($this->normalizeEmail($this->email) !== $this->normalizeEmail($this->verifiedEmail)) {
+            $this->emailVerified = false;
+            $this->verifiedEmail = null;
+            $this->emailVerificationCode = '';
+            $this->emailVerificationSentTo = null;
+            $this->emailVerificationSentAt = null;
+        }
+    }
+
+    public function sendEmailVerificationCode(): void
+    {
+        $this->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        $result = app(EmailVerificationService::class)->sendBookingCode($this->clinic, $this->email);
+
+        if (! $result['sent']) {
+            $this->addError('email', $result['message']);
+            $this->dispatch('toast', type: 'error', message: $result['message']);
+
+            return;
+        }
+
+        $this->resetErrorBag('email');
+        $this->resetErrorBag('emailVerificationCode');
+        $this->emailVerified = false;
+        $this->verifiedEmail = null;
+        $this->emailVerificationCode = '';
+        $this->emailVerificationSentTo = $this->normalizeEmail($this->email);
+        $this->emailVerificationSentAt = now()->format('Y-m-d H:i:s');
+        $this->dispatch('toast', type: 'success', message: $result['message']);
+    }
+
+    public function verifyEmailCode(): void
+    {
+        $this->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'emailVerificationCode' => ['required', 'digits:6'],
+        ]);
+
+        if ($this->normalizeEmail($this->email) !== $this->normalizeEmail($this->emailVerificationSentTo)) {
+            $message = 'Request a fresh code for this email address before verifying.';
+            $this->addError('emailVerificationCode', $message);
+            $this->dispatch('toast', type: 'error', message: $message);
+
+            return;
+        }
+
+        $verified = app(EmailVerificationService::class)->verifyBookingCode(
+            $this->clinic,
+            $this->email,
+            $this->emailVerificationCode
+        );
+
+        if (! $verified) {
+            $message = 'Invalid or expired verification code. Please request a new code.';
+            $this->addError('emailVerificationCode', $message);
+            $this->dispatch('toast', type: 'error', message: $message);
+
+            return;
+        }
+
+        $this->resetErrorBag('emailVerificationCode');
+        $this->emailVerified = true;
+        $this->verifiedEmail = $this->normalizeEmail($this->email);
+        $this->emailVerificationCode = '';
+        $this->dispatch('toast', type: 'success', message: 'Email verified. You can continue now.');
+    }
+
     public function reserveSlot(string $slotLocal): void
     {
         if (! $this->appointmentTypeId || ! $this->providerSelection) {
@@ -249,6 +327,7 @@ class Wizard extends Component
         }
 
         $this->validate($rules);
+        $this->ensureEmailVerified();
 
         if (! $this->sessionToken) {
             throw ValidationException::withMessages(['reservation' => 'Slot reservation is required before booking.']);
@@ -360,6 +439,7 @@ class Wizard extends Component
             'preferredTimeWindow' => ['required', 'in:any,morning,midday,afternoon,evening'],
             'waitlistNotes' => ['nullable', 'string', 'max:500'],
         ]);
+        $this->ensureEmailVerified();
 
         if (! $this->appointmentTypeId) {
             throw ValidationException::withMessages(['reservation' => 'Please select an appointment type first.']);
@@ -627,6 +707,20 @@ class Wizard extends Component
         $this->insuranceRelationship = 'self';
         $this->insurancePhone = '';
         $this->insuranceUrgency = 'standard';
+    }
+
+    private function ensureEmailVerified(): void
+    {
+        if (! $this->emailVerified || $this->normalizeEmail($this->email) !== $this->normalizeEmail($this->verifiedEmail)) {
+            throw ValidationException::withMessages([
+                'emailVerificationCode' => 'Verify your email address before continuing.',
+            ]);
+        }
+    }
+
+    private function normalizeEmail(?string $email): string
+    {
+        return strtolower(trim((string) $email));
     }
 
     public function render()

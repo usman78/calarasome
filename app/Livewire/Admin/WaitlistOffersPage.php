@@ -9,11 +9,11 @@ use App\Models\ProviderSchedule;
 use App\Models\WaitlistEntry;
 use App\Models\WaitlistNotification;
 use App\Models\WaitlistNotificationRecipient;
+use App\Services\EmailDeliveryService;
 use App\Services\SlotAvailabilityService;
 use Carbon\CarbonImmutable;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Support\Facades\Mail;
 
 class WaitlistOffersPage extends Component
 {
@@ -31,6 +31,11 @@ class WaitlistOffersPage extends Component
 
     /** @var array<int, string> */
     public array $offerLinks = [];
+
+    public function __construct($id = null)
+    {
+        parent::__construct($id);
+    }
 
     public function mount(): void
     {
@@ -114,11 +119,26 @@ class WaitlistOffersPage extends Component
         $hasConsent = (bool) ($consent['emailConsent'] ?? false);
 
         if ($patient && $patient->email && $hasConsent) {
-            Mail::to($patient->email)->send(
-                new WaitlistSlotAvailableEmail($issue['token'], $expiresAt)
+            app(EmailDeliveryService::class)->sendPatientMail(
+                $notification->clinic,
+                $patient,
+                new WaitlistSlotAvailableEmail($issue['token'], $expiresAt),
+                'waitlist_notification',
+                $notification->id,
+                ['recipient_id' => $issue['record']->id, 'kind' => 'admin_created_offer']
             );
             $this->dispatch('toast', type: 'success', message: 'Offer link created and email sent.');
         } else {
+            app(EmailDeliveryService::class)->logSkipped(
+                $notification->clinic,
+                $patient,
+                $patient?->email,
+                WaitlistSlotAvailableEmail::class,
+                $patient?->email ? 'missing_consent' : 'missing_email',
+                'waitlist_notification',
+                $notification->id,
+                ['recipient_id' => $issue['record']->id, 'kind' => 'admin_created_offer']
+            );
             $this->dispatch('toast', type: 'success', message: 'Offer link created. Email not sent (missing consent or email).');
         }
         $this->loadNotifications();

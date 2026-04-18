@@ -21,13 +21,14 @@
     $hasName = filled(trim((string) $fullName));
     $hasEmail = filled(trim((string) $email));
     $hasDob = filled(trim((string) $dateOfBirth));
-    $canCompleteBooking = $hasName && $hasEmail && $hasDob && $emailConsent && filled($sessionToken);
-    $canSubmitWaitlist = $hasName && $hasEmail && $hasDob && $emailConsent;
+    $canCompleteBooking = $hasName && $hasEmail && $hasDob && $emailConsent && $emailVerified && filled($sessionToken);
+    $canSubmitWaitlist = $hasName && $hasEmail && $hasDob && $emailConsent && $emailVerified;
     $missingWaitlist = [];
     if (! $hasName) { $missingWaitlist[] = 'full name'; }
     if (! $hasEmail) { $missingWaitlist[] = 'email'; }
     if (! $hasDob) { $missingWaitlist[] = 'date of birth'; }
     if (! $emailConsent) { $missingWaitlist[] = 'email consent'; }
+    if (! $emailVerified) { $missingWaitlist[] = 'email verification'; }
 @endphp
 
 <div class="mx-auto w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50">
@@ -51,7 +52,7 @@
             <div
                 wire:key="progress-{{ $step }}"
                 class="h-full rounded-full bg-zinc-900 transition-all duration-300 dark:bg-zinc-100"
-                style="width: {{ $progressPercent }}%; min-width: 6px; display: block; background-color: #18181b;"
+                style="width: {{ $progressPercent }}%; min-width: 6px; display: block;"
             ></div>
         </div>
     </div>
@@ -372,6 +373,48 @@
                         @error('dateOfBirth')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                         @enderror
+                    </div>
+                </div>
+
+                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <div class="text-sm font-semibold text-zinc-900 dark:text-white">Verify email before continuing</div>
+                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">We send a 6-digit code to confirm the address is correct before secure links and reminders depend on it.</p>
+                            @if ($emailVerificationSentTo)
+                                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                    Code sent to {{ $emailVerificationSentTo }}
+                                    @if ($emailVerificationSentAt)
+                                        at {{ $emailVerificationSentAt }}.
+                                    @endif
+                                </p>
+                            @endif
+                        </div>
+                        @if ($emailVerified && strtolower(trim((string) $email)) === strtolower(trim((string) $verifiedEmail)))
+                            <span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">Verified</span>
+                        @endif
+                    </div>
+
+                    <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                        <div>
+                            <flux:input wire:model.live="emailVerificationCode" label="Verification Code" type="text" inputmode="numeric" placeholder="Enter 6-digit code" />
+                            @error('emailVerificationCode')
+                                <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="flex flex-col gap-2 md:justify-end">
+                            <flux:button type="button" variant="filled" wire:click="sendEmailVerificationCode" wire:loading.attr="disabled" wire:target="sendEmailVerificationCode">
+                                Send Code
+                            </flux:button>
+                            <flux:button type="button" variant="primary" wire:click="verifyEmailCode" wire:loading.attr="disabled" wire:target="verifyEmailCode">
+                                Verify Email
+                            </flux:button>
+                        </div>
+                    </div>
+
+                    <div wire:loading.flex wire:target="sendEmailVerificationCode,verifyEmailCode" class="mt-3 items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                        <span class="inline-block size-2 animate-pulse rounded-full bg-zinc-500"></span>
+                        Checking email verification...
                     </div>
                 </div>
 

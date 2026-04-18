@@ -6,13 +6,17 @@ use App\Models\Appointment;
 use App\Models\InsuranceVerification;
 use App\Models\Patient;
 use App\Models\User;
-use Illuminate\Support\Facades\Mail;
 use App\Mail\InsuranceVerificationFailedEmail;
 use App\Mail\InsuranceVerificationDailySummaryEmail;
 use Carbon\CarbonImmutable;
 
 class InsuranceVerificationService
 {
+    public function __construct(
+        private readonly EmailDeliveryService $emailDeliveryService,
+    ) {
+    }
+
     /** @param array<string, mixed> $insurancePayload */
     public function createForAppointment(
         Appointment $appointment,
@@ -128,11 +132,17 @@ class InsuranceVerificationService
             ->get();
 
         foreach ($admins as $admin) {
-            Mail::to($admin->email)->send(
+            $this->emailDeliveryService->sendToAddress(
+                null,
+                null,
+                $admin->email,
                 new InsuranceVerificationDailySummaryEmail([
                     'report_date' => CarbonImmutable::now()->addDay()->format('Y-m-d'),
                     'items' => $items,
-                ])
+                ]),
+                'insurance_verification_summary',
+                null,
+                ['admin_user_id' => $admin->id, 'items_count' => count($items)]
             );
         }
 
@@ -144,18 +154,20 @@ class InsuranceVerificationService
         $verification->loadMissing(['patient', 'clinic']);
 
         $patient = $verification->patient;
-        $consent = $patient?->communication_consent ?? [];
-        $hasConsent = (bool) ($consent['emailConsent'] ?? false);
-
-        if (! $patient || ! $patient->email || ! $hasConsent) {
+        if (! $patient) {
             return;
         }
 
-        Mail::to($patient->email)->send(
+        $this->emailDeliveryService->sendPatientMail(
+            $verification->clinic,
+            $patient,
             new InsuranceVerificationFailedEmail([
                 'clinic' => $verification->clinic?->name ?? 'Clinic',
                 'patient' => $patient->full_name ?? 'Patient',
-            ])
+            ]),
+            'insurance_verification',
+            $verification->id,
+            ['kind' => 'verification_failed']
         );
     }
 }

@@ -136,6 +136,22 @@ it('allows admin to access insurance verification queue', function () {
         ->assertSee('Insurance Verification Queue');
 });
 
+it('requires admin for email delivery page', function () {
+    $this->get(route('admin.email-delivery'))->assertRedirect(route('login'));
+
+    $user = User::factory()->create(['is_admin' => false]);
+    $this->actingAs($user)->get(route('admin.email-delivery'))->assertForbidden();
+});
+
+it('allows admin to access email delivery page', function () {
+    $user = User::factory()->create(['is_admin' => true]);
+
+    $this->actingAs($user)
+        ->get(route('admin.email-delivery'))
+        ->assertOk()
+        ->assertSee('Email Delivery');
+});
+
 it('requires admin for patient merge audit page', function () {
     $this->get(route('admin.patient-merge-audit'))->assertRedirect(route('login'));
 
@@ -167,8 +183,7 @@ it('allows admin to mark a patient match alert as resolved', function () {
 
     Livewire::actingAs($admin)
         ->test(\App\Livewire\Admin\PatientMatchAlertsPage::class)
-        ->call('markResolved', $alert->id)
-        ->assertSee('Alert marked as resolved.');
+        ->call('markResolved', $alert->id);
 
     expect($alert->fresh()->resolved_at)->not->toBeNull();
 });

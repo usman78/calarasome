@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\AppointmentPayment;
+use App\Models\EmailDeliveryLog;
 use App\Models\InsuranceVerification;
 use App\Models\PatientMatchAlert;
 use Livewire\Component;
@@ -13,6 +14,7 @@ class DashboardAlerts extends Component
     public int $paymentsExpired = 0;
     public int $insuranceUrgent = 0;
     public int $matchAlerts = 0;
+    public int $emailFailures = 0;
 
     public function mount(): void
     {
@@ -43,6 +45,11 @@ class DashboardAlerts extends Component
             ->count();
 
         $this->matchAlerts = PatientMatchAlert::query()
+            ->whereNull('resolved_at')
+            ->count();
+
+        $this->emailFailures = EmailDeliveryLog::query()
+            ->where('status', 'failed')
             ->whereNull('resolved_at')
             ->count();
     }

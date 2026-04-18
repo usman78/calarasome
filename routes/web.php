@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::view('admin/waitlist', 'admin.waitlist')->name('admin.waitlist');
     Route::view('admin/waitlist-offers', 'admin.waitlist-offers')->name('admin.waitlist-offers');
     Route::view('admin/insurance-verifications', 'admin.insurance-verifications')->name('admin.insurance-verifications');
+    Route::view('admin/email-delivery', 'admin.email-delivery')->name('admin.email-delivery');
 });
 
 require __DIR__.'/settings.php';

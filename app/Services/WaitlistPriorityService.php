@@ -7,10 +7,14 @@ use App\Models\Clinic;
 use App\Models\WaitlistEntry;
 use App\Mail\WaitlistReengagementEmail;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Mail;
 
 class WaitlistPriorityService
 {
+    public function __construct(
+        private readonly EmailDeliveryService $emailDeliveryService,
+    ) {
+    }
+
     /** @return array{score:int,tier:string,signals:array<string,mixed>} */
     public function calculate(WaitlistEntry $entry): array
     {
@@ -96,16 +100,19 @@ class WaitlistPriorityService
             $patient = $entry->patient;
             $clinic = $entry->clinic;
             $appointmentType = $entry->appointmentType;
-            $consent = $patient?->communication_consent ?? [];
-            $hasConsent = (bool) ($consent['emailConsent'] ?? false);
 
-            if ($patient?->email && $hasConsent && $clinic) {
-                Mail::to($patient->email)->send(
+            if ($clinic) {
+                $this->emailDeliveryService->sendPatientMail(
+                    $clinic,
+                    $patient,
                     new WaitlistReengagementEmail(
                         $clinic->name ?? 'Clinic',
                         $appointmentType?->name ?? 'Appointment',
                         $clinic->slug
-                    )
+                    ),
+                    'waitlist_entry',
+                    $entry->id,
+                    ['kind' => 'waitlist_reengagement']
                 );
             }
         }
