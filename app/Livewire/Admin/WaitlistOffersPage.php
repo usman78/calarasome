@@ -32,11 +32,6 @@ class WaitlistOffersPage extends Component
     /** @var array<int, string> */
     public array $offerLinks = [];
 
-    public function __construct($id = null)
-    {
-        parent::__construct($id);
-    }
-
     public function mount(): void
     {
         $this->ensureAdmin();
