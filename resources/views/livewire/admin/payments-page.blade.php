@@ -161,7 +161,7 @@
                                     <button
                                         type="button"
                                         class="inline-flex items-center justify-center rounded-lg border border-amber-300 px-2.5 py-1 text-xs font-semibold text-amber-800 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/20"
-                                        @if ($isFinalStatus || ! $payment['appointment_id'])
+                                        @if ($isFinalStatus || ! $payment['appointment_id'] || ! $payment['can_no_show'])
                                             disabled
                                         @else
                                             x-data

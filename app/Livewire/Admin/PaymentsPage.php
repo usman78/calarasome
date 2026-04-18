@@ -191,6 +191,9 @@ class PaymentsPage extends Component
                 $isInGrace = in_array($payment->status, ['failed', 'canceled'], true)
                     && $payment->grace_expires_at
                     && $payment->grace_expires_at->greaterThan($now);
+                $canNoShow = $appointment?->slot_datetime
+                    ? $appointment->slot_datetime->lessThan($now->copy()->utc())
+                    : false;
 
                 return [
                     'id' => $payment->id,
@@ -210,6 +213,7 @@ class PaymentsPage extends Component
                     'timezone' => $timezone,
                     'patient' => $payment->patient?->full_name ?? 'Patient',
                     'email' => $payment->patient?->email ?? null,
+                    'can_no_show' => $canNoShow,
                 ];
             });
     }
