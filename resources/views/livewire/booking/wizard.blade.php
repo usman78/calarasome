@@ -1,4 +1,4 @@
-﻿@php
+@php
     $steps = [
         1 => 'Patient Status',
         2 => 'Treatment',
@@ -21,7 +21,21 @@
     $hasName = filled(trim((string) $fullName));
     $hasEmail = filled(trim((string) $email));
     $hasDob = filled(trim((string) $dateOfBirth));
-    $canCompleteBooking = $hasName && $hasEmail && $hasDob && $emailConsent && $emailVerified && filled($sessionToken);
+    $hasRequiredInsuranceDetails = ! $requiresInsurance || (
+        filled(trim((string) $insuranceProvider))
+        && filled(trim((string) $insuranceMemberId))
+        && filled(trim((string) $insuranceSubscriberName))
+        && filled(trim((string) $insuranceSubscriberDob))
+        && filled(trim((string) $insuranceRelationship))
+        && filled(trim((string) $insuranceUrgency))
+    );
+    $canCompleteBooking = $hasName
+        && $hasEmail
+        && $hasDob
+        && $emailConsent
+        && $emailVerified
+        && filled($sessionToken)
+        && $hasRequiredInsuranceDetails;
     $canSubmitWaitlist = $hasName && $hasEmail && $hasDob && $emailConsent && $emailVerified;
     $missingWaitlist = [];
     if (! $hasName) { $missingWaitlist[] = 'full name'; }
@@ -425,13 +439,13 @@
 
                         <div class="mt-4 grid gap-4 md:grid-cols-2">
                             <div>
-                                <flux:input wire:model="insuranceProvider" label="Insurance Provider" type="text" required />
+                                <flux:input wire:model.live="insuranceProvider" label="Insurance Provider" type="text" required />
                                 @error('insuranceProvider')
                                     <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <flux:input wire:model="insuranceMemberId" label="Member ID" type="text" required />
+                                <flux:input wire:model.live="insuranceMemberId" label="Member ID" type="text" required />
                                 @error('insuranceMemberId')
                                     <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                                 @enderror
@@ -449,19 +463,19 @@
                                 @enderror
                             </div>
                             <div>
-                                <flux:input wire:model="insuranceSubscriberName" label="Subscriber Name" type="text" required />
+                                <flux:input wire:model.live="insuranceSubscriberName" label="Subscriber Name" type="text" required />
                                 @error('insuranceSubscriberName')
                                     <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <flux:input wire:model="insuranceSubscriberDob" label="Subscriber Date of Birth" type="date" required />
+                                <flux:input wire:model.live="insuranceSubscriberDob" label="Subscriber Date of Birth" type="date" required />
                                 @error('insuranceSubscriberDob')
                                     <p class="mt-1 text-xs text-red-600 dark:text-red-300">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <flux:select wire:model="insuranceRelationship" label="Relationship to Subscriber" required>
+                                <flux:select wire:model.live="insuranceRelationship" label="Relationship to Subscriber" required>
                                     <flux:select.option value="self">Self</flux:select.option>
                                     <flux:select.option value="spouse">Spouse</flux:select.option>
                                     <flux:select.option value="child">Child</flux:select.option>
@@ -478,7 +492,7 @@
                                 @enderror
                             </div>
                             <div class="md:col-span-2">
-                                <flux:select wire:model="insuranceUrgency" label="Visit Urgency" required>
+                                <flux:select wire:model.live="insuranceUrgency" label="Visit Urgency" required>
                                     <flux:select.option value="standard">Standard</flux:select.option>
                                     <flux:select.option value="high">High</flux:select.option>
                                     <flux:select.option value="critical">Critical</flux:select.option>
@@ -774,3 +788,5 @@
         })();
     </script>
 @endonce
+
+
