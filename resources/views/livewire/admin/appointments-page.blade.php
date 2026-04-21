@@ -17,9 +17,9 @@
                 <div class="w-full md:w-40">
                     <flux:select wire:model.live="dateFilter" label="Date">
                         <flux:select.option value="today">Today</flux:select.option>
+                        <flux:select.option value="next7">Next 7 Days</flux:select.option>
                         <flux:select.option value="future">Future</flux:select.option>
                         <flux:select.option value="past">Past</flux:select.option>
-                        <flux:select.option value="next7">Next 7 Days</flux:select.option>
                         <flux:select.option value="all">All</flux:select.option>
                     </flux:select>
                 </div>
