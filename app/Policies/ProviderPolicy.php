@@ -9,26 +9,26 @@ class ProviderPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->is_admin;
+        return $user->hasClinicManagementAccess();
     }
 
     public function view(User $user, Provider $provider): bool
     {
-        return $user->is_admin;
+        return $user->canManageClinicId($provider->clinic_id);
     }
 
     public function create(User $user): bool
     {
-        return $user->is_admin;
+        return $user->hasClinicManagementAccess();
     }
 
     public function update(User $user, Provider $provider): bool
     {
-        return $user->is_admin;
+        return $user->canManageClinicId($provider->clinic_id);
     }
 
     public function delete(User $user, Provider $provider): bool
     {
-        return $user->is_admin;
+        return $user->canManageClinicId($provider->clinic_id);
     }
 }

@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToAdminClinicScope;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToAdminClinicScope;
 
     protected $fillable = [
         'user_id',
@@ -45,3 +47,6 @@ class AuditLog extends Model
         return $this->belongsTo(Patient::class);
     }
 }
+
+
+

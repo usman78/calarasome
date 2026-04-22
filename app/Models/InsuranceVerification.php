@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToAdminClinicScope;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InsuranceVerification extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToAdminClinicScope;
 
     protected $fillable = [
         'clinic_id',
@@ -44,3 +46,6 @@ class InsuranceVerification extends Model
         return $this->belongsTo(Patient::class);
     }
 }
+
+
+

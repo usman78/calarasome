@@ -55,3 +55,5 @@ class AppointmentAccessToken extends Model
         return ['token' => $token, 'record' => $record];
     }
 }
+
+

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,6 +45,27 @@ class AppointmentPayment extends Model
         'grace_expires_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope('admin_clinic_access', function (Builder $builder): void {
+            $user = auth()->user();
+
+            if (! $user instanceof User || ! $user->is_admin) {
+                return;
+            }
+
+            $clinicIds = $user->clinics()->pluck('id')->all();
+
+            if ($clinicIds === []) {
+                $builder->whereRaw('1 = 0');
+
+                return;
+            }
+
+            $builder->whereHas('appointment', fn (Builder $appointmentQuery) => $appointmentQuery->whereIn('clinic_id', $clinicIds));
+        });
+    }
+
     public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);
@@ -58,3 +81,5 @@ class AppointmentPayment extends Model
         return $this->belongsTo(AppointmentType::class);
     }
 }
+
+

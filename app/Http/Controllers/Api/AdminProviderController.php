@@ -19,6 +19,7 @@ class AdminProviderController extends Controller
     public function index(ProviderIndexRequest $request): JsonResponse
     {
         $this->authorize('viewAny', Provider::class);
+        $this->ensureClinicAccess((int) $request->integer('clinic_id'));
 
         $providers = Provider::query()
             ->where('clinic_id', (int) $request->integer('clinic_id'))
@@ -32,7 +33,10 @@ class AdminProviderController extends Controller
     {
         $this->authorize('create', Provider::class);
 
-        $provider = Provider::query()->create($request->validated());
+        $validated = $request->validated();
+        $this->ensureClinicAccess((int) $validated['clinic_id']);
+
+        $provider = Provider::query()->create($validated);
 
         return response()->json($provider, 201);
     }
@@ -165,5 +169,10 @@ class AdminProviderController extends Controller
         $block->delete();
 
         return response()->json(status: 204);
+    }
+
+    private function ensureClinicAccess(int $clinicId): void
+    {
+        abort_unless(auth()->user()?->canManageClinicId($clinicId), 403, 'Clinic access denied.');
     }
 }

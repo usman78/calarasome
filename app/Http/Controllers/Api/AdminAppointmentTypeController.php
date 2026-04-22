@@ -21,6 +21,7 @@ class AdminAppointmentTypeController extends Controller
     public function index(AppointmentTypeIndexRequest $request): JsonResponse
     {
         $this->authorize('viewAny', AppointmentType::class);
+        $this->ensureClinicAccess((int) $request->integer('clinic_id'));
 
         return response()->json(
             AppointmentType::query()
@@ -35,6 +36,7 @@ class AdminAppointmentTypeController extends Controller
         $this->authorize('create', AppointmentType::class);
 
         $validated = $request->validated();
+        $this->ensureClinicAccess((int) $validated['clinic_id']);
 
         $appointmentType = DB::transaction(function () use ($validated): AppointmentType {
             $appointmentType = AppointmentType::query()->create([
@@ -81,5 +83,10 @@ class AdminAppointmentTypeController extends Controller
         });
 
         return response()->json(status: 204);
+    }
+
+    private function ensureClinicAccess(int $clinicId): void
+    {
+        abort_unless(auth()->user()?->canManageClinicId($clinicId), 403, 'Clinic access denied.');
     }
 }

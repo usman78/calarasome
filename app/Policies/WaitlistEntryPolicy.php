@@ -9,6 +9,11 @@ class WaitlistEntryPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->is_admin;
+        return $user->hasClinicManagementAccess();
+    }
+
+    public function view(User $user, WaitlistEntry $waitlistEntry): bool
+    {
+        return $user->canManageClinicId($waitlistEntry->clinic_id);
     }
 }

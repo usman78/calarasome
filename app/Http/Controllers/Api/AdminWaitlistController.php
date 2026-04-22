@@ -21,7 +21,11 @@ class AdminWaitlistController extends Controller
             ->where('status', 'active');
 
         if ($request->filled('clinic_id')) {
-            $query->where('clinic_id', (int) $request->integer('clinic_id'));
+            $clinicId = (int) $request->integer('clinic_id');
+            $this->ensureClinicAccess($clinicId);
+            $query->where('clinic_id', $clinicId);
+        } else {
+            $query->whereIn('clinic_id', $this->accessibleClinicIds());
         }
 
         $entries = $query->orderByDesc('created_at')->get();
@@ -48,5 +52,16 @@ class AdminWaitlistController extends Controller
         }
 
         return response()->json($payload);
+    }
+
+    /** @return list<int> */
+    private function accessibleClinicIds(): array
+    {
+        return auth()->user()?->clinics()->pluck('id')->map(fn ($id) => (int) $id)->all() ?? [];
+    }
+
+    private function ensureClinicAccess(int $clinicId): void
+    {
+        abort_unless(auth()->user()?->canManageClinicId($clinicId), 403, 'Clinic access denied.');
     }
 }

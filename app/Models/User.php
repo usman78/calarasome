@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -14,11 +15,6 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -26,11 +22,6 @@ class User extends Authenticatable
         'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'two_factor_secret',
@@ -38,11 +29,6 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -52,9 +38,6 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Get the user's initials
-     */
     public function initials(): string
     {
         return Str::of($this->name)
@@ -63,4 +46,35 @@ class User extends Authenticatable
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
+
+    public function clinics(): HasMany
+    {
+        return $this->hasMany(Clinic::class, 'owner_id');
+    }
+
+    public function hasClinicManagementAccess(): bool
+    {
+        return $this->is_admin && Clinic::query()
+            ->withoutGlobalScopes()
+            ->where(function ($query): void {
+                $query->where('owner_id', $this->id)->orWhereNull('owner_id');
+            })
+            ->exists();
+    }
+
+    public function canManageClinicId(?int $clinicId): bool
+    {
+        if (! $this->is_admin || ! $clinicId) {
+            return false;
+        }
+
+        return Clinic::query()
+            ->withoutGlobalScopes()
+            ->whereKey($clinicId)
+            ->where(function ($query): void {
+                $query->where('owner_id', $this->id)->orWhereNull('owner_id');
+            })
+            ->exists();
+    }
 }
+

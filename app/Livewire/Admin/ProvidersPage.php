@@ -155,6 +155,8 @@ class ProvidersPage extends Component
             'isAcceptingNewPatients' => ['boolean'],
         ]);
 
+        $this->ensureClinicAccess((int) $validated['clinicId']);
+
         if ($this->selectedProviderId) {
             $provider = Provider::query()->where('clinic_id', $this->clinicId)->findOrFail($this->selectedProviderId);
 
@@ -478,3 +480,9 @@ class ProvidersPage extends Component
         ]);
     }
 }
+
+
+
+
+
+

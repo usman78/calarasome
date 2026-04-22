@@ -58,3 +58,5 @@ class WaitlistNotificationRecipient extends Model
         return ['token' => $token, 'record' => $record];
     }
 }
+
+
