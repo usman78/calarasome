@@ -8,7 +8,8 @@
             <div class="flex w-full max-w-sm flex-col gap-2">
                 <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
                     <span class="flex h-9 w-9 mb-1 items-center justify-center rounded-md">
-                        <x-app-logo-icon class="size-9 fill-current text-black dark:text-white" />
+                        {{-- <x-app-logo-icon class="size-9 fill-current text-black dark:text-white" /> --}}
+                        <div style="font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; font-size: 34px; color: var(--c-rose-deep); letter-spacing: 0.01em;">Calarasome</div>
                     </span>
                     <span class="sr-only">{{ config('app.name', 'Laravel') }}</span>
                 </a>
