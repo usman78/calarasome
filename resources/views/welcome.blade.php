@@ -1,22 +1,21 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>{{ __('Welcome') }} - {{ config('app.name', 'Laravel') }}</title>
+        <title>Calarasome | Dermatology booking workflow for pilot clinics</title>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-        <meta name="description" content="Calarasome is a HIPAA-compliant dermatology scheduling platform that automates deposits, insurance verification, and waitlists. Built for modern skin care practices.">
-        <meta name="keywords" content="dermatology scheduling software, HIPAA compliant booking, medical appointment scheduling, dermatology practice management, no-show deposit system">
+        <meta name="description" content="Calarasome is a dermatology scheduling and workflow platform designed to reduce no-shows, protect revenue, and make front-desk booking work easier for skin care practices.">
+        <meta name="keywords" content="dermatology scheduling software, medical appointment scheduling, dermatology practice management, med spa booking software, no-show reduction system">
         <meta name="robots" content="index, follow">
         <link rel="canonical" href="https://calarasome.pragmatrics.com">
         <meta property="og:type" content="website">
         <meta property="og:url" content="https://calarasome.pragmatrics.com">
-        <meta property="og:title" content="Calarasome — Dermatology Scheduling, Reimagined">
-        <meta property="og:description" content="The scheduling platform your patients trust and your clinic actually needs. HIPAA-compliant, deposit-ready, and built for dermatology.">
+        <meta property="og:title" content="Calarasome - Dermatology Scheduling, Reimagined">
+        <meta property="og:description" content="The scheduling platform designed to reduce no-shows, streamline front-desk work, and keep dermatology schedules full.">
         <meta property="og:image" content="https://calarasome.pragmatrics.com/og-image.jpg">
         <meta property="og:image:width" content="1200">
         <meta property="og:image:height" content="630">
@@ -64,7 +63,6 @@
             overflow-x: hidden;
             }
 
-            /* ── NAV ── */
             nav {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -134,7 +132,6 @@
 
             .nav-cta:hover { background: var(--slate-mid) !important; color: white !important; }
 
-            /* ── HERO ── */
             .hero {
             min-height: 100vh;
             padding-top: 68px;
@@ -246,7 +243,7 @@
             .btn-secondary-hero:hover { color: var(--rose-deep); }
 
             .btn-secondary-hero::after {
-            content: '→';
+            content: '\2192';
             transition: transform 0.2s;
             }
 
@@ -286,7 +283,6 @@
             background: var(--ink-15);
             }
 
-            /* ── HERO RIGHT (UI MOCKUP) ── */
             .hero-right {
             background: var(--sand);
             position: relative;
@@ -559,8 +555,6 @@
             line-height: 1.5;
             }
 
-
-            /* ── SECTION SHARED ── */
             section { padding: 120px 80px; }
 
             .section-eyebrow {
@@ -603,7 +597,6 @@
             }
 
 
-            /* ── PAIN SECTION ── */
             .pain-section {
             background: var(--obsidian);
             padding: 120px 80px;
@@ -682,7 +675,6 @@
             }
 
 
-            /* ── FEATURES ── */
             .features-section { background: var(--page); }
 
             .features-intro {
@@ -778,7 +770,6 @@
             .feature-block.dark .feature-list li::before { color: var(--blush); }
 
 
-            /* ── HOW IT WORKS ── */
             .how-section { background: var(--white); }
 
             .steps-container {
@@ -792,7 +783,7 @@
             .steps-container::before {
             content: '';
             position: absolute;
-            top: 28px; left: calc(16.666% + 20px);
+            top: 28px; left: calc(3% + 10px);
             width: calc(66.666% - 40px);
             height: 1px;
             background: linear-gradient(90deg, var(--blush), var(--rose), var(--blush));
@@ -835,7 +826,6 @@
             }
 
 
-            /* ── HIPAA TRUST STRIP ── */
             .trust-strip {
             background: var(--sand);
             padding: 48px 80px;
@@ -883,7 +873,6 @@
             }
 
 
-            /* ── TESTIMONIALS ── */
             .testimonials-section { background: var(--page); }
 
             .testimonials-grid {
@@ -953,7 +942,6 @@
             }
 
 
-            /* ── PRICING ── */
             .pricing-section { background: var(--white); }
 
             .pricing-grid {
@@ -1068,7 +1056,7 @@
             .pricing-card.featured .pricing-features li { color: rgba(255,255,255,0.6); }
 
             .pricing-features li::before {
-            content: '✓';
+            content: '\2713';
             color: var(--sage);
             font-weight: 700;
             flex-shrink: 0;
@@ -1110,8 +1098,6 @@
 
             .btn-pricing-light:hover { background: var(--sand); }
 
-
-            /* ── CTA SECTION ── */
             .cta-section {
             background: var(--obsidian);
             padding: 140px 80px;
@@ -1184,8 +1170,6 @@
             margin-top: 24px;
             }
 
-
-            /* ── FOOTER ── */
             footer {
             background: #0B0A10;
             padding: 80px;
@@ -1281,7 +1265,6 @@
 
             .footer-bottom-right a:hover { color: rgba(255,255,255,0.5); }
 
-            /* ── SCROLL ANIMATION ── */
             .reveal {
             opacity: 0;
             transform: translateY(24px);
@@ -1293,7 +1276,6 @@
             transform: translateY(0);
             }
 
-            /* ── RESPONSIVE ── */
             @media (max-width: 900px) {
             nav { padding: 0 24px; }
             .nav-links { display: none; }
@@ -1325,10 +1307,10 @@
             "name": "Calarasome",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
-            "description": "HIPAA-compliant dermatology appointment scheduling platform with automated deposits, insurance verification, and waitlist management.",
+            "description": "Dermatology appointment scheduling and workflow software designed to reduce no-shows, streamline deposits, and improve front-desk operations.",
             "offers": {
                 "@type": "Offer",
-                "price": "149",
+                "price": "0",
                 "priceCurrency": "USD"
             },
             "publisher": {
@@ -1346,7 +1328,7 @@
             <ul class="nav-links">
                 <li><a href="#features">Features</a></li>
                 <li><a href="#how-it-works">How it works</a></li>
-                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#pricing">Pilot</a></li>
                 <li><a href="{{ route('login') }}" class="nav-cta">Sign In</a></li>
             </ul>
         </nav>
@@ -1355,18 +1337,18 @@
         <div class="hero">
             <div class="hero-left">
                 <div class="hero-eyebrow">
-                <span class="hero-eyebrow-pill">Dermatology Scheduling</span>
+                <span class="hero-eyebrow-pill">Dermatology Booking Workflow</span>
                 <span class="hero-eyebrow-line"></span>
                 </div>
 
                 <h1 class="hero-h1">
-                The scheduling<br>
-                platform your<br>
-                <em>patients trust</em><br>
-                <strong>and your clinic<br>actually needs.</strong>
+                Reduce no-shows.<br>
+                Save front-desk<br>
+                <em>time every day</em><br>
+                <strong>and keep more of<br>your schedule full.</strong>
                 </h1>
 
-                <p class="hero-sub">Calarasome handles booking, deposits, insurance verification, and waitlists — HIPAA-compliant, fully automated, built specifically for dermatology.</p>
+                <p class="hero-sub">Calarasome helps dermatology and aesthetic clinics automate booking, deposits, cancellations, waitlists, and insurance intake so fewer appointments fall through the cracks.</p>
 
                 <div class="hero-actions">
                 <a href="https://calendar.app.google/AvBTHifK8zDddBer6" class="btn-primary-hero" target="_blank">Request a Demo</a>
@@ -1375,18 +1357,18 @@
 
                 <div class="hero-trust">
                 <div class="trust-item">
-                    <span class="trust-num">100%</span>
-                    <span class="trust-label">HIPAA Compliant</span>
+                    <span class="trust-num">Privacy-first</span>
+                    <span class="trust-label">Patient communication workflows</span>
                 </div>
                 <div class="trust-divider"></div>
                 <div class="trust-item">
-                    <span class="trust-num">6-Step</span>
+                    <span class="trust-num">6-step</span>
                     <span class="trust-label">Guided booking</span>
                 </div>
                 <div class="trust-divider"></div>
                 <div class="trust-item">
-                    <span class="trust-num">0%</span>
-                    <span class="trust-label">Refund fees on voids</span>
+                    <span class="trust-num">Waitlist-ready</span>
+                    <span class="trust-label">Cancellation recovery</span>
                 </div>
                 </div>
             </div>
@@ -1394,15 +1376,15 @@
             <div class="hero-right">
                 <!-- Floating alert cards -->
                 <div class="float-card top-right">
-                <div class="float-icon green">✓</div>
-                <div class="float-title">Insurance Verified</div>
-                <div class="float-sub">Sarah O'Neill · 2:30 PM today</div>
+                <div class="float-icon green">&#10003;</div>
+                <div class="float-title">Insurance reviewed</div>
+                <div class="float-sub">Coverage checked for today's 2:30 PM visit</div>
                 </div>
 
                 <div class="float-card bottom-left">
-                <div class="float-icon gold">⏰</div>
-                <div class="float-title">Waitlist Slot Open</div>
-                <div class="float-sub">3 patients notified by tier</div>
+                <div class="float-icon gold">&#9200;</div>
+                <div class="float-title">Cancellation recovered</div>
+                <div class="float-sub">Offer sent to the best-fit waitlist patient</div>
                 </div>
 
                 <!-- Main mockup -->
@@ -1446,7 +1428,7 @@
                         <div class="any-label">Any Available Provider</div>
                         <div class="any-sub">Auto-assigned by availability</div>
                         </div>
-                        <span style="color: var(--rose); font-size: 18px;">→</span>
+                        <span style="color: var(--rose); font-size: 18px;">&rarr;</span>
                     </div>
                     </div>
                 </div>
@@ -1455,7 +1437,7 @@
                     <div class="reservation-dot"></div>
                     Slot held · 9:47 remaining
                     </div>
-                    <button class="mockup-next-btn">Continue →</button>
+                    <button class="mockup-next-btn">Continue &rarr;</button>
                 </div>
                 </div>
             </div>
@@ -1463,9 +1445,9 @@
 
         <!-- PAIN SECTION -->
         <section class="pain-section" id="pain">
-            <div class="section-eyebrow">The real cost of bad scheduling</div>
-            <h2 class="section-h2">Three problems killing<br><em>your clinic's revenue.</em></h2>
-            <p class="section-sub">Most dermatology practices lose thousands monthly to problems that are entirely preventable — if their scheduling software was built for them.</p>
+            <div class="section-eyebrow">The operational pain points</div>
+            <h2 class="section-h2">Three workflow problems<br><em>that quietly drain revenue.</em></h2>
+            <p class="section-sub">Most practices do not lose money because care is poor. They lose it because scheduling, cancellations, and follow-up still depend on too much manual work.</p>
 
             <div class="pain-grid">
                 <div class="pain-item reveal">
@@ -1478,8 +1460,8 @@
                     </div>
                     <div class="pain-title">No-shows with no recourse</div>
                 </div>
-                <p class="pain-body">A patient misses their appointment. You can't charge them. The slot is gone, the revenue is gone, and there's nothing you can do — because you never collected a card.</p>
-                <p class="pain-stat">"The average derm practice loses $18K/year to no-shows."</p>
+                <p class="pain-body">A patient misses their appointment. You cannot charge them. The slot is gone, the revenue is gone, and there is nothing you can do because no valid card or policy was in place ahead of time.</p>
+                <p class="pain-stat">Missed appointments turn directly into lost chair time and lost revenue.</p>
                 </div>
                 <div class="pain-item reveal">
                 <div class="pain-number">02</div>
@@ -1492,7 +1474,7 @@
                     <div class="pain-title">Insurance verified too late</div>
                 </div>
                 <p class="pain-body">Patient arrives. Insurance is denied. The appointment can't proceed. Your clinic absorbs the cost of the time, the staff prep, and the patient's frustration.</p>
-                <p class="pain-stat">"Same-day insurance failures cost clinics 2–4 hours weekly."</p>
+                <p class="pain-stat">Late insurance surprises create rework, delays, and avoidable frustration.</p>
                 </div>
                 <div class="pain-item reveal">
                 <div class="pain-number">03</div>
@@ -1504,8 +1486,8 @@
                     </div>
                     <div class="pain-title">Waitlists managed manually</div>
                 </div>
-                <p class="pain-body">Someone cancels. You call down a list. The slot sits empty while you leave voicemails. By the time someone responds, it's filled — or worse, it isn't.</p>
-                <p class="pain-stat">"Manual waitlists fill only 40% of last-minute cancellations."</p>
+                <p class="pain-body">Someone cancels. You call down a list. The slot sits empty while staff leave voicemails, wait for replies, and restart the process manually.</p>
+                <p class="pain-stat">Manual waitlists are slow, inconsistent, and hard to keep fair.</p>
                 </div>
             </div>
         </section>
@@ -1519,8 +1501,8 @@
                     </svg>
                 </div>
                 <div class="trust-strip-text">
-                <strong>HIPAA Compliant</strong>
-                <span>PHI-safe emails, consent-gated communications</span>
+                <strong>Privacy-conscious workflows</strong>
+                <span>Consent-aware communication paths with secure access when needed</span>
                 </div>
             </div>
             <div class="trust-strip-divider"></div>
@@ -1532,7 +1514,7 @@
                 </div>
                 <div class="trust-strip-text">
                 <strong>Stripe-Powered Deposits</strong>
-                <span>Auth holds, not charges — zero refund fees on voids</span>
+                <span>Auth holds instead of immediate charges for near-term bookings</span>
                 </div>
             </div>
             <div class="trust-strip-divider"></div>
@@ -1543,7 +1525,7 @@
                     </svg>
                 </div>
                 <div class="trust-strip-text">
-                <strong>DST-Safe Scheduling</strong>
+                <strong>Timezone-aware scheduling</strong>
                 <span>Timezone-aware, Luxon-powered, UTC-stored</span>
                 </div>
             </div>
@@ -1555,8 +1537,8 @@
                     </svg>
                 </div>
                 <div class="trust-strip-text">
-                <strong>10-Minute Slot Hold</strong>
-                <span>Race-condition-proof booking, no double bookings</span>
+                <strong>Protected slot reservation</strong>
+                <span>Short reservation window to reduce booking collisions</span>
                 </div>
             </div>
         </div>
@@ -1565,17 +1547,17 @@
         <section class="features-section" id="features">
             <div class="features-intro">
                 <div>
-                <div class="section-eyebrow">Built for how you work</div>
-                <h2 class="section-h2">Every feature<br>earns its place.</h2>
+                <div class="section-eyebrow">Built around clinic outcomes</div>
+                <h2 class="section-h2">The workflows that help clinics<br><em>run with less friction.</em></h2>
                 </div>
-                <p class="section-sub">Calarasome isn't a generic booking tool skinned for healthcare. Every feature was designed from the ground up for the specific operational realities of a dermatology practice.</p>
+                <p class="section-sub">Calarasome is focused on the parts of scheduling that create the most operational drag: missed appointments, cancellation gaps, deposit friction, insurance follow-up, and front-desk overload.</p>
             </div>
 
             <div class="features-grid">
                 <div class="feature-block reveal">
                 <span class="feature-tag light">Payments</span>
-                <h3 class="feature-title">Deposits that never cost you fees</h3>
-                <p class="feature-body">Our hybrid deposit model uses authorization holds — not charges — for near-term bookings. If a patient cancels early, you void the hold at $0 cost. No refund fees, ever.</p>
+                <h3 class="feature-title">Deposit handling that protects revenue</h3>
+                <p class="feature-body">For eligible appointments, Calarasome can use authorization holds instead of immediate charges. That gives clinics policy enforcement without creating unnecessary refund cleanup when patients cancel on time.</p>
                 <ul class="feature-list">
                     <li>Auth holds for appointments within 7 days</li>
                     <li>Card-save only for far-future bookings</li>
@@ -1587,10 +1569,10 @@
                 <div class="feature-block dark reveal">
                 <span class="feature-tag dark-tag">Waitlist</span>
                 <h3 class="feature-title">Waitlists that actually fill slots</h3>
-                <p class="feature-body">When a slot opens, we notify patients in priority tiers — urgent cases first, then by wait time and history. No simultaneous blast. No chaos. Just fair, fast slot recovery.</p>
+                <p class="feature-body">When a slot opens, the system helps your team offer it to the most relevant waitlist patients first, instead of restarting the scheduling process from scratch.</p>
                 <ul class="feature-list">
                     <li>Automated tier-based staggered dispatch</li>
-                    <li>Urgent → High → Standard, 15-min gaps</li>
+                    <li>Urgent &rarr; High &rarr; Standard dispatch windows</li>
                     <li>One-click slot claim cancels all pending rounds</li>
                     <li>Manual override always available</li>
                 </ul>
@@ -1598,8 +1580,8 @@
 
                 <div class="feature-block reveal">
                 <span class="feature-tag light">Insurance</span>
-                <h3 class="feature-title">Verification before the patient arrives</h3>
-                <p class="feature-body">Same-day bookings trigger immediate admin alerts. Standard urgency cases are batched nightly. Your team always knows what needs attention before the day begins.</p>
+                <h3 class="feature-title">Insurance follow-up before the visit</h3>
+                <p class="feature-body">Insurance-heavy bookings can be routed into an admin queue so your team sees what needs follow-up before the patient arrives, not at the front desk.</p>
                 <ul class="feature-list">
                     <li>Real-time alert for critical & same-day bookings</li>
                     <li>Admin queue sorted by urgency level</li>
@@ -1609,9 +1591,9 @@
                 </div>
 
                 <div class="feature-block reveal">
-                <span class="feature-tag light">HIPAA</span>
-                <h3 class="feature-title">Communications your patients can trust</h3>
-                <p class="feature-body">Patients choose Standard or Private consent at booking. Private patients never receive their treatment name in email — only a secure, time-limited link to verify their details.</p>
+                <span class="feature-tag light">Privacy</span>
+                <h3 class="feature-title">Communication paths matched to patient consent</h3>
+                <p class="feature-body">Patients choose how they want to receive communication. Private flows keep sensitive details out of email and move patients into a secure verification page instead.</p>
                 <ul class="feature-list">
                     <li>PHI-safe de-identified email path</li>
                     <li>Secure token page with DOB verification</li>
@@ -1624,44 +1606,44 @@
 
         <!-- HOW IT WORKS -->
         <section class="how-section" id="how-it-works">
-            <div class="section-eyebrow">Simple to deploy</div>
-            <h2 class="section-h2">From signup to first<br><em>booked appointment</em><br>in under a day.</h2>
+            <div class="section-eyebrow">Pilot-friendly rollout</div>
+            <h2 class="section-h2">Set up your clinic,<br><em>launch a pilot,</em><br>and learn from real bookings.</h2>
 
             <div class="steps-container">
                 <div class="step-item reveal">
                 <div class="step-num-wrap"><span class="step-num">1</span></div>
                 <h3 class="step-title">Set up your clinic</h3>
-                <p class="step-body">Add your providers, configure schedules, set treatment types and deposit amounts. Your clinic profile goes live in minutes — no code required.</p>
+                <p class="step-body">Add your providers, configure schedules, and define appointment types and deposit rules. The goal is a practical pilot setup, not a heavy implementation project.</p>
                 </div>
                 <div class="step-item reveal">
                 <div class="step-num-wrap"><span class="step-num">2</span></div>
                 <h3 class="step-title">Share your booking link</h3>
-                <p class="step-body">Drop your Calarasome booking URL on your website, Google Business profile, or ZocDoc listing. Patients book directly — guided through 6 clear steps.</p>
+                <p class="step-body">Share your booking link anywhere patients already discover your practice - your website, Google Business profile, or marketing pages - and let them book through a guided workflow.</p>
                 </div>
                 <div class="step-item reveal">
                 <div class="step-num-wrap"><span class="step-num">3</span></div>
                 <h3 class="step-title">Run your dashboard</h3>
-                <p class="step-body">Your admin dashboard surfaces every alert that needs attention — payment failures, unverified insurance, shared-email flags — in priority order, every morning.</p>
+                <p class="step-body">Use the admin dashboard to monitor deposits, insurance follow-up, patient alerts, waitlist recovery, and booking activity as you gather feedback from the trial.</p>
                 </div>
             </div>
         </section>
 
         <!-- TESTIMONIALS -->
         <section class="testimonials-section">
-            <div class="section-eyebrow">Early clinics</div>
-            <h2 class="section-h2">What practice managers<br><em>say after 30 days.</em></h2>
+            <div class="section-eyebrow">What this helps solve</div>
+            <h2 class="section-h2">What practice managers and owners<br><em>usually want to improve first.</em></h2>
 
             <div class="testimonials-grid">
                 <div class="testimonial-card reveal">
                 <div class="testimonial-stars">
                     <div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div>
                 </div>
-                <p class="testimonial-quote">"We recovered three no-show deposits in our first week. The auth hold model is exactly what we needed — patients take their appointments seriously now."</p>
+                <p class="testimonial-quote">Reduce lost revenue from late cancellations and no-shows by giving the clinic a clearer deposit and follow-up workflow.</p>
                 <div class="testimonial-author">
-                    <div class="author-avatar av-1">JK</div>
+                    <div class="author-avatar av-1">RP</div>
                     <div>
-                    <div class="author-name">Jessica K.</div>
-                    <div class="author-role">Practice Manager · Eastside Derm</div>
+                    <div class="author-name">Revenue protection</div>
+                    <div class="author-role">Deposits, cancellation rules, no-show handling</div>
                     </div>
                 </div>
                 </div>
@@ -1670,12 +1652,12 @@
                 <div class="testimonial-stars">
                     <div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div>
                 </div>
-                <p class="testimonial-quote">"The insurance queue is the feature I didn't know I needed. We used to find out about verification failures at 8:58 AM. Now we know the day before."</p>
+                <p class="testimonial-quote">Cut down on front-desk interruptions by collecting booking details earlier and routing exceptions into an admin queue.</p>
                 <div class="testimonial-author">
-                    <div class="author-avatar av-2">MR</div>
+                    <div class="author-avatar av-2">SE</div>
                     <div>
-                    <div class="author-name">Marcus R.</div>
-                    <div class="author-role">Office Director · Clear Skin Clinic</div>
+                    <div class="author-name">Staff efficiency</div>
+                    <div class="author-role">Fewer phone calls, fewer manual follow-ups</div>
                     </div>
                 </div>
                 </div>
@@ -1684,12 +1666,12 @@
                 <div class="testimonial-stars">
                     <div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div>
                 </div>
-                <p class="testimonial-quote">"I was skeptical about the HIPAA email thing being that strict. But patients actually appreciate it — two asked us specifically about it in their first visit."</p>
+                <p class="testimonial-quote">Refill canceled slots faster with a structured waitlist flow instead of starting outreach from scratch every time.</p>
                 <div class="testimonial-author">
-                    <div class="author-avatar av-3">AT</div>
+                    <div class="author-avatar av-3">SR</div>
                     <div>
-                    <div class="author-name">Aisha T.</div>
-                    <div class="author-role">Dermatologist & Owner · Bloom Derm</div>
+                    <div class="author-name">Schedule recovery</div>
+                    <div class="author-role">Waitlist offers, open-slot recovery, clearer patient communication</div>
                     </div>
                 </div>
                 </div>
@@ -1699,68 +1681,67 @@
         <!-- PRICING -->
         <section class="pricing-section" id="pricing">
             <div style="text-align: center; margin-bottom: 0;">
-                <div class="section-eyebrow" style="justify-content: center;"><span style="display:none">&nbsp;</span>Transparent pricing</div>
-                <h2 class="section-h2" style="text-align: center;">Simple plans.<br><em>No surprises.</em></h2>
-                <p class="section-sub" style="margin: 16px auto 0; text-align: center;">Every plan includes HIPAA-compliant communications, Stripe deposit handling, and the full patient booking flow.</p>
+                <div class="section-eyebrow" style="justify-content: center;"><span style="display:none">&nbsp;</span>Pilot program</div>
+                <h2 class="section-h2" style="text-align: center;">Start with a guided trial.<br><em>Refine it with real feedback.</em></h2>
+                <p class="section-sub" style="margin: 16px auto 0; text-align: center;">The current focus is a small number of pilot clinics. The goal is to prove operational value with real bookings before locking in long-term pricing.</p>
             </div>
 
             <div class="pricing-grid">
                 <div class="pricing-card reveal">
-                <div class="pricing-plan">Starter</div>
+                <div class="pricing-plan">Free pilot</div>
                 <div class="pricing-price">
-                    <span class="price-currency">$</span>
-                    <span class="price-amount">149</span>
-                    <span class="price-period">/month</span>
+                    <span class="price-currency"></span>
+                    <span class="price-amount">30-60</span>
+                    <span class="price-period"> days</span>
                 </div>
-                <p class="pricing-desc">For solo practitioners and small practices getting started with smart scheduling.</p>
+                <p class="pricing-desc">For single-clinic pilots that want to test booking, deposits, and waitlist recovery with real patients.</p>
                 <ul class="pricing-features">
-                    <li>1 provider</li>
-                    <li>Up to 200 appointments/month</li>
-                    <li>HIPAA email communications</li>
-                    <li>Deposit & payment handling</li>
-                    <li>Basic waitlist</li>
-                    <li>Standard support</li>
+                    <li>Up to 1 clinic in pilot scope</li>
+                    <li>Guided onboarding for your core workflow</li>
+                    <li>Privacy-conscious patient communication flows</li>
+                    <li>Deposit and cancellation policy setup</li>
+                    <li>Waitlist and open-slot recovery</li>
+                    <li>Founder-led support during the trial</li>
                 </ul>
-                <a href="https://calendar.app.google/AvBTHifK8zDddBer6" class="btn-pricing btn-pricing-outline" target="_blank">Get started</a>
+                <a href="https://calendar.app.google/AvBTHifK8zDddBer6" class="btn-pricing btn-pricing-outline" target="_blank">Apply for a pilot</a>
                 </div>
 
                 <div class="pricing-card featured reveal">
-                <div class="featured-badge">Most Popular</div>
-                <div class="pricing-plan">Practice</div>
+                <div class="featured-badge">Recommended</div>
+                <div class="pricing-plan">Pilot plus onboarding</div>
                 <div class="pricing-price">
-                    <span class="price-currency" style="color:rgba(255,255,255,0.5);">$</span>
-                    <span class="price-amount">349</span>
-                    <span class="price-period">/month</span>
+                    <span class="price-currency" style="color:rgba(255,255,255,0.5);"></span>
+                    <span class="price-amount">Guided</span>
+                    <span class="price-period"> rollout</span>
                 </div>
-                <p class="pricing-desc">For multi-provider practices that need the full system working automatically.</p>
+                <p class="pricing-desc">For practices that want help configuring a fuller workflow across multiple providers during the trial period.</p>
                 <ul class="pricing-features">
-                    <li>Up to 5 providers</li>
-                    <li>Unlimited appointments</li>
-                    <li>Priority waitlist with staggered dispatch</li>
-                    <li>Insurance verification queue</li>
-                    <li>T-7 auth hold automation</li>
-                    <li>Multi-provider dashboard</li>
-                    <li>Priority support</li>
+                    <li>Multi-provider setup support</li>
+                    <li>Booking workflow review with your team</li>
+                    <li>Waitlist, cancellation, and payment policy tuning</li>
+                    <li>Insurance queue and exception workflow setup</li>
+                    <li>Admin training for daily operations</li>
+                    <li>Feedback loop during the pilot</li>
+                    <li>Priority support while testing the product</li>
                 </ul>
-                <a href="https://calendar.app.google/AvBTHifK8zDddBer6" class="btn-pricing btn-pricing-light" target="_blank">Request a demo</a>
+                <a href="https://calendar.app.google/AvBTHifK8zDddBer6" class="btn-pricing btn-pricing-light" target="_blank">Book a pilot call</a>
                 </div>
 
                 <div class="pricing-card reveal">
-                <div class="pricing-plan">Enterprise</div>
+                <div class="pricing-plan">After the pilot</div>
                 <div class="pricing-price">
-                    <span class="price-currency">$</span>
                     <span class="price-amount">Custom</span>
                 </div>
-                <p class="pricing-desc">For multi-location groups and DSO-style organizations needing custom integrations.</p>
+                <p class="pricing-desc">Once the pilot proves value, pricing and expansion can be shaped around clinic size, workflow complexity, and rollout scope.</p>
                 <ul class="pricing-features">
-                    <li>Unlimited providers & locations</li>
-                    <li>Custom EHR integration</li>
-                    <li>Dedicated onboarding manager</li>
-                    <li>SLA-backed uptime</li>
-                    <li>Custom data retention policy</li>
-                    <li>White-label available</li>
+                    <li>Rollout planning after pilot validation</li>
+                    <li>Future multi-clinic expansion planning</li>
+                    <li>Operational feedback incorporated into roadmap</li>
+                    <li>Commercial terms discussed after the trial</li>
+                    <li>Support for a phased adoption approach</li>
+                    <li>Discovery for deeper integration needs</li>
                 </ul>
-                <a href="https://calendar.app.google/AvBTHifK8zDddBer6" class="btn-pricing btn-pricing-outline" target="_blank">Contact sales</a>
+                <a href="https://calendar.app.google/AvBTHifK8zDddBer6" class="btn-pricing btn-pricing-outline" target="_blank">Talk through fit</a>
                 </div>
             </div>
         </section>
@@ -1768,13 +1749,13 @@
         <!-- CTA -->
         <section class="cta-section">
             <div class="section-eyebrow">Ready when you are</div>
-            <h2 class="section-h2">Your next no-show<br><em>is your last one.</em></h2>
-            <p class="section-sub">See Calarasome running with your clinic's real data in a 30-minute demo. No commitment, no credit card, no pitch deck.</p>
+            <h2 class="section-h2">Reduce no-shows before<br><em>they become lost revenue.</em></h2>
+            <p class="section-sub">See how Calarasome could fit your clinic's workflow, then decide whether a short pilot is worth trying with real patients and real staff feedback.</p>
             <div class="cta-actions">
                 <a href="https://calendar.app.google/AvBTHifK8zDddBer6" class="btn-cta-primary" target="_blank">Book a 30-min Demo</a>
                 <a href="{{ asset('pdf/calarasome-onepager.pdf') }}" class="btn-cta-ghost" target="_blank">Download the one-pager</a>
             </div>
-            <p class="cta-note">Free 30-day pilot available for qualifying practices · Setup in under 24 hours</p>
+            <p class="cta-note">Free 30-60 day pilot available for a small number of clinics · setup support included</p>
         </section>
 
         <!-- FOOTER -->
@@ -1782,39 +1763,39 @@
             <div class="footer-top">
                 <div>
                     <span class="footer-brand-logo">Calarasome</span>
-                    <p class="footer-brand-desc">Dermatology appointment scheduling built around the real operational needs of modern skin care practices.</p>
+                    <p class="footer-brand-desc">Dermatology booking and workflow software focused on reducing no-shows, easing front-desk work, and recovering canceled revenue.</p>
                     <p style="font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 0.12em; margin-top: 20px;">A PRAGMATRICS PRODUCT</p>
                 </div>
 
                 <div>
                     <p class="footer-col-title">Product</p>
                     <ul class="footer-links">
-                        <li><a href="#">Features</a></li>
-                        <li><a href="#">Pricing</a></li>
-                        <li><a href="#">Changelog</a></li>
-                        <li><a href="#">Roadmap</a></li>
-                        <li><a href="#">API Docs</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pilot program</a></li>
+                        <li><a href="#how-it-works">How it works</a></li>
+                        <li><a href="https://calendar.app.google/AvBTHifK8zDddBer6" target="_blank">Book a demo</a></li>
+                        <li><a href="{{ asset('pdf/calarasome-onepager.pdf') }}" target="_blank">One-pager</a></li>
                     </ul>
                 </div>
 
                 <div>
                     <p class="footer-col-title">Company</p>
                     <ul class="footer-links">
-                        <li><a href="#">About Pragmatrics</a></li>
-                        <li><a href="#">Blog</a></li>
-                        <li><a href="#">HIPAA Policy</a></li>
-                        <li><a href="#">Security</a></li>
-                        <li><a href="#">Careers</a></li>
+                        <li><a href="https://pragmatrics.com" target="_blank">About Pragmatrics</a></li>
+                        <li><a href="https://calendar.app.google/AvBTHifK8zDddBer6" target="_blank">Request a walkthrough</a></li>
+                        <li><a href="#features">Workflow highlights</a></li>
+                        <li><a href="#how-it-works">Pilot process</a></li>
+                        <li><a href="{{ route('login') }}">Client sign in</a></li>
                     </ul>
                 </div>
 
                 <div>
                 <p class="footer-col-title">Support</p>
                 <ul class="footer-links">
-                    <li><a href="#">Help Center</a></li>
-                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="https://calendar.app.google/AvBTHifK8zDddBer6" target="_blank">Book a demo</a></li>
+                    <li><a href="mailto:hello@pragmatrics.com">Contact us</a></li>
                     <li><a href="https://calendar.app.google/AvBTHifK8zDddBer6" target="_blank">Request a Demo</a></li>
-                    <li><a href="#">Status Page</a></li>
+                    <li><a href="{{ asset('pdf/calarasome-onepager.pdf') }}" target="_blank">Download one-pager</a></li>
                 </ul>
                 </div>
             </div>
@@ -1822,11 +1803,11 @@
             <div class="footer-bottom">
                 <div class="footer-bottom-left">
                     <p class="footer-bottom-copy">© 2026 Pragmatrics Inc. All rights reserved.</p>
-                    <p class="footer-bottom-by">Calarasome is a HIPAA-compliant scheduling platform</p>
+                    <p class="footer-bottom-by">Calarasome is designed for privacy-conscious scheduling workflows in dermatology and aesthetic clinics</p>
                 </div>
                 <div class="footer-bottom-right">
-                    <a href="#">Privacy Policy</a>
-                    <a href="#">Terms of Service</a>
+                    <a href="mailto:hello@pragmatrics.com">Privacy questions</a>
+                    <a href="https://calendar.app.google/AvBTHifK8zDddBer6" target="_blank">Talk to us</a>
                 </div>
             </div>
         </footer>
@@ -1855,3 +1836,5 @@
         </script>
     </body>
 </html>
+
+
