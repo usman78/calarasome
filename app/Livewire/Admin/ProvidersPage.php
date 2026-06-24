@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Admin\Concerns\InteractsWithAdminClinics;
 use App\Models\Appointment;
-use App\Models\Clinic;
 use App\Models\Provider;
 use App\Models\ProviderBlockedTime;
 use App\Models\ProviderSchedule;
@@ -13,6 +13,7 @@ use Livewire\WithPagination;
 
 class ProvidersPage extends Component
 {
+    use InteractsWithAdminClinics;
     use WithPagination;
     /** @var array<int, array{id:int,name:string}> */
     public array $clinics = [];
@@ -47,15 +48,9 @@ class ProvidersPage extends Component
 
     public function mount(): void
     {
-        $this->clinics = Clinic::query()
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn (Clinic $clinic): array => [
-                'id' => $clinic->id,
-                'name' => $clinic->name,
-            ])->all();
+        $this->clinics = $this->accessibleClinics();
 
-        $this->clinicId = request()->integer('clinic_id') ?: ($this->clinics[0]['id'] ?? null);
+        $this->clinicId = $this->normalizeClinicSelection(request()->integer('clinic_id'));
         $this->loadProviders();
         $this->resetProviderForm();
         $this->selectFirstProviderIfAvailable();
