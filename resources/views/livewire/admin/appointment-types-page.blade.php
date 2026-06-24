@@ -2,7 +2,7 @@
     <div class="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
         <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-                <flux:heading size="xl">Appointment Type Management</flux:heading>
+                <flux:heading size="xl">Treatment Management</flux:heading>
                 <flux:subheading>Manage treatments and provider mapping for booking availability.</flux:subheading>
             </div>
             <div class="w-full md:w-80">
